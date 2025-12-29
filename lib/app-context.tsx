@@ -84,7 +84,8 @@ export interface Property {
   propertyType: PropertyType;
   bedrooms: number;
   bathrooms: number;
-  photo: string | null;
+  photo: string | null; // Legacy field - use profilePhoto instead
+  profilePhoto: string | null; // Front of house photo for PDF cover
   tenantId: string | null;
   tenantName: string | null;
   tenantEmail: string | null;

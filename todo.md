@@ -170,3 +170,23 @@
 - [x] Display actual capture date in app inspection screen
 - [x] Update PDF to show capture date with clear fallback warning if EXIF unavailable
 - [x] Flag photos without EXIF as "Upload date - original timestamp unavailable"
+
+## Critical PDF Fixes
+- [x] Replace "New Checkpoint" and "Room - General" with "Photo 1", "Photo 2", "Photo 3" labels
+- [x] Remove room numbering (01, 02, 03...) - just use room names
+- [x] Flatten "Pass" styling - make it text-based, not a button/pill
+- [x] More generous margins and spacing throughout PDF
+- [x] Consistent photo sizing - don't let one photo dominate
+
+## Property Profile Photo
+- [x] Add profilePhoto field to Property interface
+- [x] Add "Property Photo" capture section in property creation screen
+- [x] Use profilePhoto as PDF cover image (not first inspection photo)
+- [x] If no profile photo, don't show photo on cover
+
+## Photo Watermarking
+- [x] Create watermarking service to overlay text on photos
+- [x] Add verified timestamp watermark on photos
+- [x] Add property address watermark on photos
+- [x] Apply watermarking when photos are captured/selected
+- [x] Show watermarked photos in app and PDF

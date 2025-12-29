@@ -88,7 +88,8 @@ export default function CreatePropertyScreen() {
       propertyType,
       bedrooms,
       bathrooms,
-      photo,
+      photo, // Legacy field
+      profilePhoto: photo, // Front of house photo for PDF cover
       tenantId: null,
       tenantName: null,
       tenantEmail: null,
@@ -167,9 +168,10 @@ export default function CreatePropertyScreen() {
               <Text style={styles.headerTitle}>Add Property</Text>
             </View>
 
-            {/* Photo Upload */}
+            {/* Property Profile Photo - Front of House */}
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Property Photo</Text>
+              <Text style={styles.label}>Property Photo (Front of House)</Text>
+              <Text style={styles.helperText}>This photo will appear on inspection report covers</Text>
               {photo ? (
                 <View style={styles.photoPreviewContainer}>
                   <Image source={{ uri: photo }} style={styles.photoPreview} />
@@ -333,7 +335,14 @@ const styles = StyleSheet.create({
     fontFamily: fonts.bodyMedium,
     fontSize: 14,
     color: "#1C2839",
+    marginBottom: 4,
+  },
+  helperText: {
+    fontFamily: fonts.body,
+    fontSize: 12,
+    color: "#6B6B6B",
     marginBottom: 8,
+    fontStyle: "italic",
   },
   input: {
     height: 48,

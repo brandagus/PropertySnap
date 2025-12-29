@@ -5,7 +5,7 @@ import { ScreenContainer } from "@/components/screen-container";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useColors } from "@/hooks/use-colors";
 import { useApp, Checkpoint, ConditionRating, generateId } from "@/lib/app-context";
-import { generateInspectionPDF, sharePDF, printPDF } from "@/lib/pdf-service";
+import { generateInspectionPDF, printInspectionPDF } from "@/lib/pdf-service";
 import * as Haptics from "expo-haptics";
 import { Platform } from "react-native";
 import * as ImagePicker from "expo-image-picker";
@@ -250,11 +250,14 @@ export default function InspectionDetailScreen() {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       }
       
-      const { uri } = await generateInspectionPDF(property, inspection);
-      await sharePDF(uri);
+      const result = await generateInspectionPDF(property, inspection);
       
-      if (Platform.OS !== "web") {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      if (result.success) {
+        if (Platform.OS !== "web") {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        }
+      } else {
+        throw new Error(result.error || "Failed to generate PDF");
       }
     } catch (error) {
       console.error("Error generating PDF:", error);
@@ -277,7 +280,10 @@ export default function InspectionDetailScreen() {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       }
       
-      await printPDF(property, inspection);
+      const result = await printInspectionPDF(property, inspection);
+      if (!result.success) {
+        throw new Error(result.error || "Failed to print PDF");
+      }
       
       if (Platform.OS !== "web") {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
