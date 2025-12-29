@@ -36,6 +36,7 @@ const MAPPING = {
   
   // Status
   "checkmark.circle.fill": "check-circle",
+  "checkmark.shield.fill": "verified-user",
   "exclamationmark.triangle.fill": "warning",
   "xmark.circle.fill": "cancel",
   "bell.fill": "notifications",

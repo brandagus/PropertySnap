@@ -35,6 +35,12 @@ export interface Team {
   createdAt: string;
 }
 
+export interface PhotoTimestampData {
+  captureDate: string | null; // Original EXIF capture date
+  isExifAvailable: boolean; // Whether EXIF data was extracted
+  uploadDate: string; // Fallback upload date
+}
+
 export interface Checkpoint {
   id: string;
   roomName: string;
@@ -46,7 +52,11 @@ export interface Checkpoint {
   tenantCondition: ConditionRating | null;
   moveOutCondition: ConditionRating | null;
   notes: string;
-  timestamp: string | null;
+  timestamp: string | null; // Legacy field - upload timestamp
+  // EXIF timestamp data for forensic reliability
+  landlordPhotoTimestamp: PhotoTimestampData | null;
+  tenantPhotoTimestamp: PhotoTimestampData | null;
+  moveOutPhotoTimestamp: PhotoTimestampData | null;
 }
 
 export interface Inspection {
@@ -370,6 +380,9 @@ export function createDefaultCheckpoints(rooms: string[]): Checkpoint[] {
     moveOutCondition: null,
     notes: "",
     timestamp: null,
+    landlordPhotoTimestamp: null,
+    tenantPhotoTimestamp: null,
+    moveOutPhotoTimestamp: null,
   }));
 }
 

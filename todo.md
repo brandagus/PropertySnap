@@ -161,3 +161,12 @@
 - [x] Burgundy section headers throughout
 - [x] Gold accent lines between rooms
 - [x] Professional spacing and layout
+
+## Photo EXIF Timestamp - Critical Security Fix
+- [x] Install EXIF metadata extraction library (exifreader)
+- [x] Create EXIF service to extract DateTimeOriginal from photos
+- [x] Update Checkpoint data model to store originalCaptureDate and isExifAvailable
+- [x] Extract EXIF timestamp when photo is captured/selected
+- [x] Display actual capture date in app inspection screen
+- [x] Update PDF to show capture date with clear fallback warning if EXIF unavailable
+- [x] Flag photos without EXIF as "Upload date - original timestamp unavailable"

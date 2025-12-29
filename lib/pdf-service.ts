@@ -208,7 +208,29 @@ async function generatePDFHTML(property: Property, inspection: Inspection): Prom
                 <div class="checkpoint-notes">
                   ${hasNotes ? `<p>${checkpoint.notes}</p>` : '<p class="no-info">No additional notes</p>'}
                 </div>
-                ${checkpoint.timestamp ? `<p class="checkpoint-timestamp">Inspected: ${formatDate(checkpoint.timestamp)} at ${formatTime(checkpoint.timestamp)}</p>` : ''}
+                ${(() => {
+                  // Get the photo timestamp data
+                  const photoTimestamp = checkpoint.landlordPhotoTimestamp || checkpoint.tenantPhotoTimestamp || checkpoint.moveOutPhotoTimestamp;
+                  if (photoTimestamp) {
+                    if (photoTimestamp.isExifAvailable && photoTimestamp.captureDate) {
+                      return `<div class="timestamp-verified">
+                        <span class="verified-icon">✓</span>
+                        <span>Captured: ${formatDate(photoTimestamp.captureDate)} at ${formatTime(photoTimestamp.captureDate)}</span>
+                      </div>`;
+                    } else {
+                      return `<div class="timestamp-warning">
+                        <span class="warning-icon">⚠</span>
+                        <span>Upload date only - original timestamp unavailable</span>
+                      </div>`;
+                    }
+                  } else if (checkpoint.timestamp) {
+                    return `<div class="timestamp-warning">
+                      <span class="warning-icon">⚠</span>
+                      <span>Upload date only - original timestamp unavailable</span>
+                    </div>`;
+                  }
+                  return '';
+                })()}
               </div>
             </div>
           `;
@@ -717,6 +739,39 @@ async function generatePDFHTML(property: Property, inspection: Inspection): Prom
         .checkpoint-timestamp {
           font-size: 10px;
           color: ${COLORS.mutedText};
+        }
+        
+        .timestamp-verified {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          font-size: 10px;
+          color: #2D5C3F;
+          background: rgba(45, 92, 63, 0.1);
+          padding: 6px 10px;
+          border-radius: 4px;
+          margin-top: 8px;
+        }
+        
+        .verified-icon {
+          font-weight: bold;
+          color: #2D5C3F;
+        }
+        
+        .timestamp-warning {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          font-size: 10px;
+          color: ${COLORS.burgundy};
+          background: rgba(139, 38, 53, 0.1);
+          padding: 6px 10px;
+          border-radius: 4px;
+          margin-top: 8px;
+        }
+        
+        .warning-icon {
+          color: #D97706;
         }
         
         /* Signature Section */

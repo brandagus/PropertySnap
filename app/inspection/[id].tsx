@@ -9,6 +9,7 @@ import { generateInspectionPDF, sharePDF, printPDF } from "@/lib/pdf-service";
 import * as Haptics from "expo-haptics";
 import { Platform } from "react-native";
 import * as ImagePicker from "expo-image-picker";
+import { extractPhotoTimestamp } from "@/lib/exif-service";
 
 const conditionOptions: { value: ConditionRating; label: string; description: string; color: string }[] = [
   { value: "pass", label: "Pass", description: "No issues, everything is fine", color: "#2D5C3F" },
@@ -77,10 +78,18 @@ export default function InspectionDetailScreen() {
     });
 
     if (!result.canceled && result.assets[0]) {
+      // Extract EXIF timestamp from the photo
+      const timestampData = await extractPhotoTimestamp(result.assets[0].uri);
+      
       const updatedCheckpoint: Checkpoint = {
         ...checkpoint,
         landlordPhoto: result.assets[0].uri,
         timestamp: new Date().toISOString(),
+        landlordPhotoTimestamp: {
+          captureDate: timestampData.captureDate,
+          isExifAvailable: timestampData.isExifAvailable,
+          uploadDate: timestampData.uploadDate,
+        },
       };
       
       dispatch({
@@ -103,10 +112,18 @@ export default function InspectionDetailScreen() {
     });
 
     if (!result.canceled && result.assets[0]) {
+      // Extract EXIF timestamp from the photo
+      const timestampData = await extractPhotoTimestamp(result.assets[0].uri);
+      
       const updatedCheckpoint: Checkpoint = {
         ...checkpoint,
         landlordPhoto: result.assets[0].uri,
         timestamp: new Date().toISOString(),
+        landlordPhotoTimestamp: {
+          captureDate: timestampData.captureDate,
+          isExifAvailable: timestampData.isExifAvailable,
+          uploadDate: timestampData.uploadDate,
+        },
       };
       
       dispatch({
@@ -154,6 +171,9 @@ export default function InspectionDetailScreen() {
       moveOutCondition: null,
       notes: "",
       timestamp: null,
+      landlordPhotoTimestamp: null,
+      tenantPhotoTimestamp: null,
+      moveOutPhotoTimestamp: null,
     };
 
     const updatedInspection = {
@@ -315,10 +335,33 @@ export default function InspectionDetailScreen() {
           >
             <IconSymbol name="xmark" size={14} color="#FFFFFF" />
           </Pressable>
-          {checkpoint.timestamp && (
-            <View style={styles.timestampBadge}>
+          {/* Photo Timestamp - EXIF verified or upload fallback */}
+          {checkpoint.landlordPhotoTimestamp ? (
+            <View style={[
+              styles.timestampBadge,
+              !checkpoint.landlordPhotoTimestamp.isExifAvailable && styles.timestampWarning
+            ]}>
+              {checkpoint.landlordPhotoTimestamp.isExifAvailable ? (
+                <>
+                  <IconSymbol name="checkmark.shield.fill" size={12} color="#FFFFFF" style={{ marginRight: 4 }} />
+                  <Text className="text-xs text-white">
+                    Captured: {new Date(checkpoint.landlordPhotoTimestamp.captureDate!).toLocaleString()}
+                  </Text>
+                </>
+              ) : (
+                <>
+                  <IconSymbol name="exclamationmark.triangle.fill" size={12} color="#FCD34D" style={{ marginRight: 4 }} />
+                  <Text className="text-xs text-white">
+                    Upload date - original timestamp unavailable
+                  </Text>
+                </>
+              )}
+            </View>
+          ) : checkpoint.timestamp && (
+            <View style={[styles.timestampBadge, styles.timestampWarning]}>
+              <IconSymbol name="exclamationmark.triangle.fill" size={12} color="#FCD34D" style={{ marginRight: 4 }} />
               <Text className="text-xs text-white">
-                {new Date(checkpoint.timestamp).toLocaleString()}
+                Upload date - original timestamp unavailable
               </Text>
             </View>
           )}
@@ -783,10 +826,16 @@ const styles = StyleSheet.create({
     position: "absolute",
     bottom: 8,
     left: 8,
-    backgroundColor: "rgba(0,0,0,0.6)",
+    right: 8,
+    backgroundColor: "rgba(45,92,63,0.9)",
     paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingVertical: 6,
     borderRadius: 4,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  timestampWarning: {
+    backgroundColor: "rgba(139,38,53,0.9)",
   },
   photoButton: {
     flex: 1,
