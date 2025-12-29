@@ -4,14 +4,19 @@ import { useRouter } from "expo-router";
 import { ScreenContainer } from "@/components/screen-container";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useColors } from "@/hooks/use-colors";
-import { useApp, Property } from "@/lib/app-context";
+import { useApp, Property, generateId, createDefaultCheckpoints, getDefaultRooms } from "@/lib/app-context";
 import * as Haptics from "expo-haptics";
 import { Platform, Linking } from "react-native";
+import {
+  sendTenantActionRequired,
+  scheduleInspectionReminder,
+  scheduleDueDateAlert,
+} from "@/lib/notification-service";
 
 export default function ManageTenantsScreen() {
   const router = useRouter();
   const colors = useColors();
-  const { state } = useApp();
+  const { state, dispatch } = useApp();
   
   // Get properties with tenants assigned
   const propertiesWithTenants = state.properties.filter(
@@ -23,26 +28,125 @@ export default function ManageTenantsScreen() {
     p => !p.tenantName && !p.tenantEmail && !p.tenantPhone
   );
 
-  const handleRequestInspection = (property: Property) => {
+  const handleRequestInspection = async (property: Property) => {
     if (Platform.OS !== "web") {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
     
-    // Navigate to property detail to start inspection
+    const tenantName = property.tenantName || "Tenant";
+    
     Alert.alert(
       "Request Inspection",
-      `Send inspection request to ${property.tenantName || "tenant"} for ${property.address}?`,
+      `Create a new inspection and send request to ${tenantName} for ${property.address}?`,
       [
         { text: "Cancel", style: "cancel" },
         { 
           text: "Send Request", 
-          onPress: () => {
-            // In a real app, this would send a push notification
-            Alert.alert("Request Sent", "Inspection request has been sent to the tenant.");
+          onPress: async () => {
+            // 1. Create new pending inspection
+            const newInspection = {
+              id: generateId(),
+              propertyId: property.id,
+              type: "routine" as const,
+              status: "pending" as const,
+              createdAt: new Date().toISOString(),
+              completedAt: null,
+              landlordSignature: null,
+              landlordName: null,
+              landlordSignedAt: null,
+              tenantSignature: null,
+              tenantName: null,
+              tenantSignedAt: null,
+              checkpoints: createDefaultCheckpoints(getDefaultRooms()),
+            };
+            
+            dispatch({ type: "ADD_INSPECTION", payload: { propertyId: property.id, inspection: newInspection } });
+            
+            // 2. Schedule notification reminders (7 days from now)
+            const dueDate = new Date();
+            dueDate.setDate(dueDate.getDate() + 7);
+            
+            scheduleInspectionReminder(
+              newInspection.id,
+              property.address,
+              "Routine",
+              dueDate
+            );
+            
+            scheduleDueDateAlert(
+              newInspection.id,
+              property.address,
+              "Routine",
+              dueDate
+            );
+            
+            // 3. Send push notification to tenant
+            await sendTenantActionRequired(
+              newInspection.id,
+              property.address,
+              `Your landlord has requested you to complete a property inspection for ${property.address}.`
+            );
+            
+            if (Platform.OS !== "web") {
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            }
+            
+            // 4. Ask if they want to send SMS
+            Alert.alert(
+              "Inspection Created",
+              `A new inspection has been created and notification sent. Would you also like to send an SMS to ${tenantName}?`,
+              [
+                { text: "No, I'm Done", style: "cancel" },
+                {
+                  text: "Send SMS",
+                  onPress: () => openSMSApp(property),
+                },
+              ]
+            );
           }
         },
       ]
     );
+  };
+  
+  const openSMSApp = (property: Property) => {
+    const tenantName = property.tenantName || "Tenant";
+    const phone = property.tenantPhone || "";
+    const message = `Hey ${tenantName}, your landlord has requested you to complete a property inspection for ${property.address}. Please open the PropertySnap app to get started.`;
+    
+    if (!phone) {
+      Alert.alert("No Phone Number", "This tenant doesn't have a phone number on file.");
+      return;
+    }
+    
+    // Encode the message for URL
+    const encodedMessage = encodeURIComponent(message);
+    
+    // Use different URL schemes for iOS and Android
+    let smsUrl: string;
+    if (Platform.OS === "ios") {
+      // iOS uses sms: with &body= for the message
+      smsUrl = `sms:${phone}&body=${encodedMessage}`;
+    } else if (Platform.OS === "android") {
+      // Android uses sms: with ?body= for the message
+      smsUrl = `sms:${phone}?body=${encodedMessage}`;
+    } else {
+      // Web fallback
+      smsUrl = `sms:${phone}?body=${encodedMessage}`;
+    }
+    
+    Linking.canOpenURL(smsUrl)
+      .then((supported) => {
+        if (supported) {
+          return Linking.openURL(smsUrl);
+        } else {
+          Alert.alert("SMS Not Available", "Unable to open the messaging app on this device.");
+        }
+      })
+      .catch((err) => {
+        console.error("Error opening SMS app:", err);
+        Alert.alert("Error", "Failed to open the messaging app.");
+      });
   };
 
   const handleSendSMS = (property: Property) => {

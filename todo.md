@@ -281,3 +281,10 @@
 - [ ] Show notification history/log in app
 - [ ] Handle notification tap to navigate to relevant inspection
 
+
+## Request Inspection Enhancement
+- [x] Request Inspection button creates a new pending inspection for the property
+- [x] Send push notification to tenant when inspection is requested
+- [x] After creating inspection, ask "Do you want to send an SMS?"
+- [x] If yes, open native SMS app (iMessage/Android Messages) with pre-populated phone number and message
+- [x] SMS message template: "Hey [Tenant Name], your landlord has requested you to complete a property inspection for [Address]. Please open the PropertySnap app to get started."
