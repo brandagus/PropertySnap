@@ -77,6 +77,11 @@ const MAPPING = {
   "arrow.clockwise": "refresh",
   "paperplane.fill": "send",
   "chevron.left.forwardslash.chevron.right": "code",
+  
+  // Camera & Location
+  "viewfinder": "crop-free",
+  "location.fill": "location-on",
+  "arrow.triangle.2.circlepath.camera.fill": "flip-camera-ios",
 } as IconMapping;
 
 /**

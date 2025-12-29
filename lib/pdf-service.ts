@@ -168,10 +168,30 @@ async function generatePDFHTML(property: Property, inspection: Inspection, brand
               const conditionIcon = getConditionIcon(condition);
               const conditionColor = getConditionColor(condition);
               
-              // Get timestamp data for watermark
+              // Get timestamp data for watermark - prefer verified photo data
+              const verifiedData = checkpoint.verifiedPhotoData;
               const photoTimestamp = checkpoint.landlordPhotoTimestamp || checkpoint.tenantPhotoTimestamp || checkpoint.moveOutPhotoTimestamp;
-              const timestampForWatermark = photoTimestamp?.captureDate || photoTimestamp?.uploadDate || checkpoint.timestamp;
-              const isExifVerified = photoTimestamp?.isExifAvailable || false;
+              const timestampForWatermark = verifiedData?.captureDate || photoTimestamp?.captureDate || photoTimestamp?.uploadDate || checkpoint.timestamp;
+              const isVerified = verifiedData?.verificationMethod === 'camera-capture' || photoTimestamp?.isExifAvailable || false;
+              const isGpsVerified = verifiedData?.locationVerified || false;
+              
+              // Generate verification badge HTML
+              const verificationBadgeHtml = verifiedData ? `
+                <div class="verification-badge ${isGpsVerified ? 'verified' : 'partial'}">
+                  <span class="badge-icon">${isGpsVerified ? '✓' : '⚠'}</span>
+                  <span class="badge-text">${isGpsVerified ? 'Verified Capture + GPS' : 'Verified Capture'}</span>
+                </div>
+              ` : (isVerified ? `
+                <div class="verification-badge partial">
+                  <span class="badge-icon">✓</span>
+                  <span class="badge-text">EXIF Verified</span>
+                </div>
+              ` : `
+                <div class="verification-badge unverified">
+                  <span class="badge-icon">⚠</span>
+                  <span class="badge-text">Unverified</span>
+                </div>
+              `);
               
               return `
             <div class="checkpoint-card">
@@ -181,7 +201,7 @@ async function generatePDFHTML(property: Property, inspection: Inspection, brand
                     ${timestampForWatermark ? generateWatermarkOverlay({
                       address: property.address,
                       timestamp: timestampForWatermark,
-                      isVerified: isExifVerified,
+                      isVerified: isVerified,
                     }) : ''}
                   </div>`
                 : `<div class="photo-placeholder">
@@ -191,6 +211,7 @@ async function generatePDFHTML(property: Property, inspection: Inspection, brand
               }
               <div class="checkpoint-details">
                 <h3 class="checkpoint-label">Photo ${photoIndex + 1}</h3>
+                ${hasPhoto ? verificationBadgeHtml : ''}
                 ${conditionText ? `<div class="condition-status" style="color: ${conditionColor};">
                   <span class="condition-icon">${conditionIcon}</span>
                   <span class="condition-text">Status: ${conditionText}</span>
@@ -556,6 +577,36 @@ async function generatePDFHTML(property: Property, inspection: Inspection, brand
           font-weight: 600;
           color: ${COLORS.navy};
           margin-bottom: 6px;
+        }
+        
+        .verification-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          padding: 4px 8px;
+          border-radius: 4px;
+          font-size: 10px;
+          font-weight: 600;
+          margin-bottom: 8px;
+        }
+        
+        .verification-badge.verified {
+          background: ${COLORS.forestGreen};
+          color: ${COLORS.white};
+        }
+        
+        .verification-badge.partial {
+          background: ${COLORS.navy};
+          color: ${COLORS.gold};
+        }
+        
+        .verification-badge.unverified {
+          background: ${COLORS.burgundy};
+          color: ${COLORS.white};
+        }
+        
+        .badge-icon {
+          font-size: 11px;
         }
         
         .condition-status {

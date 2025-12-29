@@ -65,76 +65,27 @@ export default function InspectionDetailScreen() {
   const progress = totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
   const roomNames = Object.keys(checkpointsByRoom);
 
-  const handleTakePhoto = async (checkpoint: Checkpoint) => {
-    const permission = await ImagePicker.requestCameraPermissionsAsync();
-    if (!permission.granted) {
-      return;
-    }
-
-    const result = await ImagePicker.launchCameraAsync({
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 0.8,
+  const handleTakeVerifiedPhoto = (checkpoint: Checkpoint) => {
+    // Navigate to verified camera with checkpoint info
+    router.push({
+      pathname: "/verified-camera",
+      params: {
+        inspectionId: inspection.id,
+        roomName: checkpoint.roomName,
+        checkpointId: checkpoint.id,
+      },
     });
-
-    if (!result.canceled && result.assets[0]) {
-      // Extract EXIF timestamp from the photo
-      const timestampData = await extractPhotoTimestamp(result.assets[0].uri);
-      
-      const updatedCheckpoint: Checkpoint = {
-        ...checkpoint,
-        landlordPhoto: result.assets[0].uri,
-        timestamp: new Date().toISOString(),
-        landlordPhotoTimestamp: {
-          captureDate: timestampData.captureDate,
-          isExifAvailable: timestampData.isExifAvailable,
-          uploadDate: timestampData.uploadDate,
-        },
-      };
-      
-      dispatch({
-        type: "UPDATE_CHECKPOINT",
-        payload: { inspectionId: inspection.id, checkpoint: updatedCheckpoint },
-      });
-
-      if (Platform.OS !== "web") {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      }
-    }
   };
 
-  const handlePickPhoto = async (checkpoint: Checkpoint) => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ["images"],
-      allowsEditing: false, // Disable editing to preserve EXIF data
-      quality: 0.8,
-      exif: true, // Request EXIF data from ImagePicker
+  const handleAddVerifiedPhoto = (roomName: string) => {
+    // Navigate to verified camera for new photo
+    router.push({
+      pathname: "/verified-camera",
+      params: {
+        inspectionId: inspection.id,
+        roomName: roomName,
+      },
     });
-
-    if (!result.canceled && result.assets[0]) {
-      // Extract EXIF timestamp from the photo - use picker result which may have EXIF
-      const asset = result.assets[0];
-      const timestampData = await extractTimestampFromPickerResult(
-        asset.uri,
-        asset.exif as Record<string, unknown> | undefined
-      );
-      
-      const updatedCheckpoint: Checkpoint = {
-        ...checkpoint,
-        landlordPhoto: result.assets[0].uri,
-        timestamp: new Date().toISOString(),
-        landlordPhotoTimestamp: {
-          captureDate: timestampData.captureDate,
-          isExifAvailable: timestampData.isExifAvailable,
-          uploadDate: timestampData.uploadDate,
-        },
-      };
-      
-      dispatch({
-        type: "UPDATE_CHECKPOINT",
-        payload: { inspectionId: inspection.id, checkpoint: updatedCheckpoint },
-      });
-    }
   };
 
   const handleConditionChange = (checkpoint: Checkpoint, condition: ConditionRating) => {
@@ -357,8 +308,32 @@ export default function InspectionDetailScreen() {
           >
             <IconSymbol name="xmark" size={14} color="#FFFFFF" />
           </Pressable>
-          {/* Photo Timestamp - EXIF verified or upload fallback */}
-          {checkpoint.landlordPhotoTimestamp ? (
+          {/* Photo Verification Badge */}
+          {checkpoint.verifiedPhotoData ? (
+            <View style={styles.verificationBadgeContainer}>
+              <View style={[
+                styles.timestampBadge,
+                styles.timestampVerified
+              ]}>
+                <IconSymbol name="checkmark.shield.fill" size={12} color="#C59849" style={{ marginRight: 4 }} />
+                <Text className="text-xs text-white">
+                  Verified: {new Date(checkpoint.verifiedPhotoData.captureDate).toLocaleString()}
+                </Text>
+              </View>
+              {checkpoint.verifiedPhotoData.locationVerified && (
+                <View style={styles.gpsBadge}>
+                  <IconSymbol name="location.fill" size={10} color="#4ADE80" style={{ marginRight: 2 }} />
+                  <Text style={styles.gpsBadgeText}>GPS Verified</Text>
+                </View>
+              )}
+              {!checkpoint.verifiedPhotoData.locationVerified && checkpoint.verifiedPhotoData.gpsCoordinates && (
+                <View style={[styles.gpsBadge, styles.gpsWarningBadge]}>
+                  <IconSymbol name="exclamationmark.triangle.fill" size={10} color="#FCD34D" style={{ marginRight: 2 }} />
+                  <Text style={styles.gpsBadgeText}>Location Mismatch</Text>
+                </View>
+              )}
+            </View>
+          ) : checkpoint.landlordPhotoTimestamp ? (
             <View style={[
               styles.timestampBadge,
               !checkpoint.landlordPhotoTimestamp.isExifAvailable && styles.timestampWarning
@@ -389,29 +364,24 @@ export default function InspectionDetailScreen() {
           )}
         </View>
       ) : (
-        <View className="flex-row gap-2 mb-3">
+        <View className="mb-3">
           <Pressable
-            onPress={() => handleTakePhoto(checkpoint)}
+            onPress={() => handleTakeVerifiedPhoto(checkpoint)}
             style={({ pressed }) => [
-              styles.photoButton,
+              styles.verifiedPhotoButton,
               { backgroundColor: colors.primary },
               pressed && { opacity: 0.9 },
             ]}
           >
-            <IconSymbol name="camera.fill" size={18} color="#FFFFFF" />
-            <Text className="text-white text-sm font-medium ml-2">Take Photo</Text>
+            <View style={styles.verifiedBadgeSmall}>
+              <IconSymbol name="checkmark.shield.fill" size={14} color="#C59849" />
+            </View>
+            <IconSymbol name="camera.fill" size={20} color="#FFFFFF" />
+            <Text className="text-white text-sm font-semibold ml-2">Capture Verified Photo</Text>
           </Pressable>
-          <Pressable
-            onPress={() => handlePickPhoto(checkpoint)}
-            style={({ pressed }) => [
-              styles.photoButton,
-              { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
-              pressed && { opacity: 0.7 },
-            ]}
-          >
-            <IconSymbol name="photo.fill" size={18} color={colors.primary} />
-            <Text className="text-sm font-medium ml-2" style={{ color: colors.primary }}>Gallery</Text>
-          </Pressable>
+          <Text className="text-xs text-muted mt-2 text-center">
+            Photos are captured with GPS location and timestamp verification
+          </Text>
         </View>
       )}
 
@@ -702,18 +672,19 @@ export default function InspectionDetailScreen() {
                     {/* Checkpoints */}
                     {checkpoints.map(renderCheckpoint)}
                     
-                    {/* Add Photo Button */}
+                    {/* Add Verified Photo Button */}
                     <Pressable
-                      onPress={() => handleAddCheckpoint(roomName)}
+                      onPress={() => handleAddVerifiedPhoto(roomName)}
                       style={({ pressed }) => [
                         styles.addCheckpointButton,
-                        { borderColor: colors.border },
+                        { borderColor: colors.primary, backgroundColor: "rgba(139,38,53,0.05)" },
                         pressed && { opacity: 0.7 },
                       ]}
                     >
-                      <IconSymbol name="plus" size={18} color={colors.primary} />
+                      <IconSymbol name="checkmark.shield.fill" size={16} color="#C59849" />
+                      <IconSymbol name="camera.fill" size={18} color={colors.primary} style={{ marginLeft: 4 }} />
                       <Text className="text-sm font-medium ml-2" style={{ color: colors.primary }}>
-                        Add Photo
+                        Add Verified Photo
                       </Text>
                     </Pressable>
                   </View>
@@ -726,8 +697,7 @@ export default function InspectionDetailScreen() {
           <Pressable
             onPress={() => {
               const newRoomName = `Room ${roomNames.length + 1}`;
-              handleAddCheckpoint(newRoomName);
-              setExpandedRoom(newRoomName);
+              handleAddVerifiedPhoto(newRoomName);
             }}
             style={({ pressed }) => [
               styles.addRoomButton,
@@ -859,6 +829,35 @@ const styles = StyleSheet.create({
   timestampWarning: {
     backgroundColor: "rgba(139,38,53,0.9)",
   },
+  timestampVerified: {
+    backgroundColor: "rgba(28,40,57,0.95)",
+    borderWidth: 1,
+    borderColor: "rgba(197,152,73,0.5)",
+  },
+  verificationBadgeContainer: {
+    position: "absolute",
+    bottom: 8,
+    left: 8,
+    right: 8,
+  },
+  gpsBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(45,92,63,0.9)",
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 4,
+    marginTop: 4,
+    alignSelf: "flex-start",
+  },
+  gpsWarningBadge: {
+    backgroundColor: "rgba(139,38,53,0.9)",
+  },
+  gpsBadgeText: {
+    color: "#FFFFFF",
+    fontSize: 10,
+    fontWeight: "500",
+  },
   photoButton: {
     flex: 1,
     height: 44,
@@ -866,6 +865,27 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
+  },
+  verifiedPhotoButton: {
+    height: 52,
+    borderRadius: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    position: "relative",
+  },
+  verifiedBadgeSmall: {
+    position: "absolute",
+    top: -6,
+    right: -6,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: "#1C2839",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 2,
+    borderColor: "#F9F7F4",
   },
   conditionButton: {
     height: 48,

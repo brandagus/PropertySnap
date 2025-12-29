@@ -244,3 +244,27 @@
 - [x] Send SMS Reminder button with editable template
 - [x] Default SMS template with tenant name and property address
 - [x] Allow landlord to customize SMS message before sending
+
+## Photo Verification - Forensic Reliability
+- [x] Remove gallery picker option - camera-only for legal-grade photos
+- [x] Embed timestamp directly into photo at capture time (not relying on EXIF)
+- [x] Add photo hash (SHA-256) verification to detect tampering
+- [x] Store original hash when photo is captured
+- [ ] Verify hash hasn't changed when generating PDF
+- [x] Show prominent "Verified" or "Unverified" badge on photos
+
+## Camera Composition Guides
+- [x] Create visual overlay showing room composition guide
+- [x] Wall-to-wall guide sketch for consistent framing
+- [x] Corner guide for capturing full room perspective
+- [x] Tips text overlay explaining how to take the photo
+- [x] Different guides for different checkpoint types (walls, floor, ceiling, fixtures)
+- [x] Toggle to show/hide guides during capture
+
+## Photo Integrity Features
+- [x] Disable screenshots as valid photos (camera-only mode)
+- [x] Detect if photo was taken within the app vs imported
+- [x] Add GPS coordinates to photo metadata when available
+- [x] Cross-reference GPS with property address for location verification
+- [x] Flag photos taken far from property location
+

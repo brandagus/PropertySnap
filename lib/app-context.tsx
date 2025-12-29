@@ -44,6 +44,23 @@ export interface PhotoTimestampData {
   uploadDate: string; // Fallback upload date
 }
 
+// Verified photo data for forensic reliability
+export interface VerifiedPhotoData {
+  uri: string;
+  captureDate: string;
+  isExifAvailable: boolean;
+  uploadDate: string;
+  verificationMethod: "camera-capture" | "gallery-import" | "unknown";
+  photoHash: string; // SHA-256 hash for tamper detection
+  gpsCoordinates: {
+    latitude: number;
+    longitude: number;
+    accuracy: number | null;
+  } | null;
+  locationVerified: boolean; // Whether GPS matches property location
+  compositionGuide?: string; // Which guide was used when capturing
+}
+
 export interface Checkpoint {
   id: string;
   roomName: string;
@@ -60,6 +77,8 @@ export interface Checkpoint {
   landlordPhotoTimestamp: PhotoTimestampData | null;
   tenantPhotoTimestamp: PhotoTimestampData | null;
   moveOutPhotoTimestamp: PhotoTimestampData | null;
+  // Verified photo data with GPS and hash
+  verifiedPhotoData?: VerifiedPhotoData | null;
 }
 
 export interface Inspection {
@@ -108,6 +127,9 @@ export interface Property {
   createdAt: string;
   // Team assignment
   assignedTo?: string[]; // Team member IDs who can access this property
+  // GPS coordinates for location verification
+  latitude?: number;
+  longitude?: number;
 }
 
 export interface User {
