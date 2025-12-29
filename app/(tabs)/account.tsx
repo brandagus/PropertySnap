@@ -2,8 +2,8 @@ import { View, Text, Pressable, StyleSheet, ScrollView, Alert } from "react-nati
 import { useRouter } from "expo-router";
 import { ScreenContainer } from "@/components/screen-container";
 import { IconSymbol } from "@/components/ui/icon-symbol";
-import { useColors } from "@/hooks/use-colors";
 import { useApp } from "@/lib/app-context";
+import { fonts, design } from "@/constants/typography";
 import * as Haptics from "expo-haptics";
 import { Platform } from "react-native";
 
@@ -13,12 +13,10 @@ interface MenuItem {
   subtitle?: string;
   onPress: () => void;
   showChevron?: boolean;
-  destructive?: boolean;
 }
 
 export default function AccountScreen() {
   const router = useRouter();
-  const colors = useColors();
   const { state, dispatch } = useApp();
 
   const handleLogout = () => {
@@ -106,35 +104,29 @@ export default function AccountScreen() {
       }}
       style={({ pressed }) => [
         styles.menuItem,
-        !isLast && { borderBottomWidth: 1, borderBottomColor: colors.border },
-        pressed && { backgroundColor: colors.border },
+        !isLast && styles.menuItemBorder,
+        pressed && { backgroundColor: "#F5F3F0" },
       ]}
     >
-      <View 
-        className="w-10 h-10 rounded-full items-center justify-center mr-3"
-        style={{ backgroundColor: `${colors.primary}15` }}
-      >
-        <IconSymbol name={item.icon} size={20} color={colors.primary} />
+      <View style={styles.menuIconContainer}>
+        <IconSymbol name={item.icon} size={20} color="#8B2635" />
       </View>
-      <View className="flex-1">
-        <Text className="text-base font-medium text-foreground">{item.title}</Text>
+      <View style={styles.menuContent}>
+        <Text style={styles.menuTitle}>{item.title}</Text>
         {item.subtitle && (
-          <Text className="text-sm text-muted mt-0.5">{item.subtitle}</Text>
+          <Text style={styles.menuSubtitle}>{item.subtitle}</Text>
         )}
       </View>
       {item.showChevron && (
-        <IconSymbol name="chevron.right" size={18} color={colors.muted} />
+        <IconSymbol name="chevron.right" size={18} color="#6B6B6B" />
       )}
     </Pressable>
   );
 
   const renderSection = (title: string, items: MenuItem[]) => (
-    <View className="mb-6">
-      <Text className="text-sm font-medium text-muted mb-2 px-4">{title}</Text>
-      <View 
-        className="rounded-xl overflow-hidden"
-        style={{ backgroundColor: colors.surface }}
-      >
+    <View style={styles.section}>
+      <Text style={styles.sectionTitle}>{title}</Text>
+      <View style={styles.sectionContent}>
         {items.map((item, index) => renderMenuItem(item, index, index === items.length - 1))}
       </View>
     </View>
@@ -142,31 +134,25 @@ export default function AccountScreen() {
 
   return (
     <ScreenContainer>
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView showsVerticalScrollIndicator={false} style={styles.container}>
         {/* Header */}
-        <View className="px-6 py-4">
-          <Text className="text-2xl font-bold text-foreground">Account</Text>
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Account</Text>
         </View>
 
         {/* User Info Card */}
-        <View className="px-4 mb-6">
-          <View 
-            className="p-4 rounded-xl flex-row items-center"
-            style={{ backgroundColor: colors.surface }}
-          >
-            <View 
-              className="w-16 h-16 rounded-full items-center justify-center"
-              style={{ backgroundColor: `${colors.primary}20` }}
-            >
-              <Text className="text-2xl font-bold text-primary">
+        <View style={styles.userCardContainer}>
+          <View style={styles.userCard}>
+            <View style={styles.avatarContainer}>
+              <Text style={styles.avatarText}>
                 {state.user?.email?.charAt(0).toUpperCase() ?? "?"}
               </Text>
             </View>
-            <View className="ml-4 flex-1">
-              <Text className="text-lg font-semibold text-foreground">
+            <View style={styles.userInfo}>
+              <Text style={styles.userName}>
                 {state.user?.email ?? "Guest"}
               </Text>
-              <Text className="text-sm text-muted mt-1">
+              <Text style={styles.userRole}>
                 {state.user?.userType === "landlord" ? "Landlord" : 
                  state.user?.userType === "tenant" ? "Tenant" : 
                  state.user?.userType === "manager" ? "Property Manager" : "Guest"}
@@ -176,22 +162,21 @@ export default function AccountScreen() {
         </View>
 
         {/* Menu Sections */}
-        <View className="px-4">
+        <View style={styles.menuContainer}>
           {renderSection("ACCOUNT", accountMenuItems)}
           {renderSection("SUPPORT", supportMenuItems)}
         </View>
 
         {/* Logout Button */}
-        <View className="px-4 mb-8">
+        <View style={styles.logoutContainer}>
           <Pressable
             onPress={handleLogout}
             style={({ pressed }) => [
               styles.logoutButton,
-              { backgroundColor: colors.surface },
               pressed && { opacity: 0.7 },
             ]}
           >
-            <Text className="text-error text-base font-semibold">Log Out</Text>
+            <Text style={styles.logoutText}>Log Out</Text>
           </Pressable>
         </View>
       </ScrollView>
@@ -200,15 +185,128 @@ export default function AccountScreen() {
 }
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#FFFFFF",
+  },
+  header: {
+    paddingHorizontal: 24,
+    paddingVertical: 16,
+  },
+  headerTitle: {
+    fontFamily: fonts.heading,
+    fontSize: 28,
+    color: "#1C2839",
+  },
+  userCardContainer: {
+    paddingHorizontal: 24,
+    marginBottom: 24,
+  },
+  userCard: {
+    backgroundColor: "#F9F7F4",
+    borderRadius: 8,
+    padding: 20,
+    flexDirection: "row",
+    alignItems: "center",
+    ...design.shadow.card,
+  },
+  avatarContainer: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: "#8B2635",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  avatarText: {
+    fontFamily: fonts.heading,
+    fontSize: 24,
+    color: "#FFFFFF",
+  },
+  userInfo: {
+    marginLeft: 16,
+    flex: 1,
+  },
+  userName: {
+    fontFamily: fonts.headingSemibold,
+    fontSize: 18,
+    color: "#1C2839",
+    marginBottom: 4,
+  },
+  userRole: {
+    fontFamily: fonts.body,
+    fontSize: 14,
+    color: "#6B6B6B",
+  },
+  menuContainer: {
+    paddingHorizontal: 24,
+  },
+  section: {
+    marginBottom: 24,
+  },
+  sectionTitle: {
+    fontFamily: fonts.bodyMedium,
+    fontSize: 12,
+    color: "#6B6B6B",
+    marginBottom: 8,
+    letterSpacing: 0.5,
+  },
+  sectionContent: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#E8E6E3",
+    overflow: "hidden",
+  },
   menuItem: {
     flexDirection: "row",
     alignItems: "center",
     padding: 16,
+    backgroundColor: "#FFFFFF",
   },
-  logoutButton: {
-    height: 48,
-    borderRadius: 12,
+  menuItemBorder: {
+    borderBottomWidth: 1,
+    borderBottomColor: "#E8E6E3",
+  },
+  menuIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#F9F7F4",
     alignItems: "center",
     justifyContent: "center",
+    marginRight: 12,
+  },
+  menuContent: {
+    flex: 1,
+  },
+  menuTitle: {
+    fontFamily: fonts.bodyMedium,
+    fontSize: 15,
+    color: "#1C2839",
+  },
+  menuSubtitle: {
+    fontFamily: fonts.body,
+    fontSize: 13,
+    color: "#6B6B6B",
+    marginTop: 2,
+  },
+  logoutContainer: {
+    paddingHorizontal: 24,
+    marginBottom: 32,
+  },
+  logoutButton: {
+    height: 52,
+    backgroundColor: "#FEF2F2",
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: "#991B1B",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  logoutText: {
+    fontFamily: fonts.bodySemibold,
+    fontSize: 16,
+    color: "#991B1B",
   },
 });

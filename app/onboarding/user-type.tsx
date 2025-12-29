@@ -2,8 +2,8 @@ import { View, Text, Pressable, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
 import { ScreenContainer } from "@/components/screen-container";
 import { IconSymbol } from "@/components/ui/icon-symbol";
-import { useColors } from "@/hooks/use-colors";
 import { useApp, UserType } from "@/lib/app-context";
+import { fonts, design } from "@/constants/typography";
 import * as Haptics from "expo-haptics";
 import { Platform } from "react-native";
 
@@ -37,7 +37,6 @@ const userTypes: UserTypeOption[] = [
 
 export default function UserTypeScreen() {
   const router = useRouter();
-  const colors = useColors();
   const { dispatch } = useApp();
 
   const handleSelectType = (type: UserType) => {
@@ -49,58 +48,42 @@ export default function UserTypeScreen() {
   };
 
   return (
-    <ScreenContainer edges={["top", "bottom", "left", "right"]} className="px-6">
-      <View className="flex-1 pt-12">
-        <Text className="text-3xl font-bold text-foreground text-center mb-2">
-          Welcome to PropertySnap
-        </Text>
-        <Text className="text-base text-muted text-center mb-10">
-          Select your role to get started
-        </Text>
+    <ScreenContainer edges={["top", "bottom", "left", "right"]}>
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.title}>Welcome to PropertySnap</Text>
+          <Text style={styles.subtitle}>Select your role to get started</Text>
+        </View>
 
-        <View className="gap-4">
+        <View style={styles.cardsContainer}>
           {userTypes.map((option) => (
             <Pressable
               key={option.type}
               onPress={() => handleSelectType(option.type)}
               style={({ pressed }) => [
                 styles.card,
-                { 
-                  backgroundColor: colors.surface,
-                  borderColor: colors.border,
-                },
                 pressed && styles.cardPressed,
               ]}
             >
-              <View 
-                className="w-14 h-14 rounded-full items-center justify-center mr-4"
-                style={{ backgroundColor: `${colors.primary}15` }}
-              >
-                <IconSymbol name={option.icon} size={28} color={colors.primary} />
+              <View style={styles.iconContainer}>
+                <IconSymbol name={option.icon} size={28} color="#8B2635" />
               </View>
-              <View className="flex-1">
-                <Text className="text-lg font-semibold text-foreground mb-1">
-                  {option.title}
-                </Text>
-                <Text className="text-sm text-muted leading-5">
-                  {option.description}
-                </Text>
+              <View style={styles.cardContent}>
+                <Text style={styles.cardTitle}>{option.title}</Text>
+                <Text style={styles.cardDescription}>{option.description}</Text>
               </View>
-              <IconSymbol name="chevron.right" size={20} color={colors.muted} />
+              <IconSymbol name="chevron.right" size={20} color="#6B6B6B" />
             </Pressable>
           ))}
         </View>
 
-        <View className="mt-auto pb-8">
-          <Text className="text-sm text-muted text-center">
+        <View style={styles.footer}>
+          <Text style={styles.footerText}>
             Already have an account?{" "}
-            <Text 
-              className="text-primary font-semibold"
-              onPress={() => router.push("/auth/login")}
-            >
-              Log in
-            </Text>
           </Text>
+          <Pressable onPress={() => router.push("/auth/login")}>
+            <Text style={styles.loginLink}>Log in</Text>
+          </Pressable>
         </View>
       </View>
     </ScreenContainer>
@@ -108,15 +91,84 @@ export default function UserTypeScreen() {
 }
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#FFFFFF",
+    paddingHorizontal: 24,
+  },
+  header: {
+    paddingTop: 48,
+    marginBottom: 40,
+  },
+  title: {
+    fontFamily: fonts.heading,
+    fontSize: 32,
+    color: "#1C2839",
+    textAlign: "center",
+    marginBottom: 8,
+  },
+  subtitle: {
+    fontFamily: fonts.body,
+    fontSize: 16,
+    color: "#6B6B6B",
+    textAlign: "center",
+  },
+  cardsContainer: {
+    gap: 16,
+  },
   card: {
     flexDirection: "row",
     alignItems: "center",
-    padding: 16,
-    borderRadius: 12,
+    padding: 20,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 8,
     borderWidth: 1,
+    borderColor: "#E8E6E3",
+    ...design.shadow.card,
   },
   cardPressed: {
-    opacity: 0.7,
+    borderColor: "#C59849",
     transform: [{ scale: 0.98 }],
+  },
+  iconContainer: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: "#F9F7F4",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 16,
+  },
+  cardContent: {
+    flex: 1,
+  },
+  cardTitle: {
+    fontFamily: fonts.headingSemibold,
+    fontSize: 18,
+    color: "#1C2839",
+    marginBottom: 4,
+  },
+  cardDescription: {
+    fontFamily: fonts.body,
+    fontSize: 14,
+    color: "#6B6B6B",
+    lineHeight: 20,
+  },
+  footer: {
+    marginTop: "auto",
+    paddingBottom: 32,
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  footerText: {
+    fontFamily: fonts.body,
+    fontSize: 15,
+    color: "#6B6B6B",
+  },
+  loginLink: {
+    fontFamily: fonts.bodySemibold,
+    fontSize: 15,
+    color: "#8B2635",
   },
 });

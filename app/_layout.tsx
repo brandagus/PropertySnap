@@ -5,7 +5,7 @@ import { StatusBar } from "expo-status-bar";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import "react-native-reanimated";
-import { Platform } from "react-native";
+import { Platform, View, Text } from "react-native";
 import "@/lib/_core/nativewind-pressable";
 import { ThemeProvider } from "@/lib/theme-provider";
 import { AppProvider } from "@/lib/app-context";
@@ -16,9 +16,26 @@ import {
   initialWindowMetrics,
 } from "react-native-safe-area-context";
 import type { EdgeInsets, Metrics, Rect } from "react-native-safe-area-context";
+import * as SplashScreen from "expo-splash-screen";
+import {
+  useFonts,
+  CrimsonPro_400Regular,
+  CrimsonPro_500Medium,
+  CrimsonPro_600SemiBold,
+  CrimsonPro_700Bold,
+} from "@expo-google-fonts/crimson-pro";
+import {
+  Inter_400Regular,
+  Inter_500Medium,
+  Inter_600SemiBold,
+  Inter_700Bold,
+} from "@expo-google-fonts/inter";
 
 import { trpc, createTRPCClient } from "@/lib/trpc";
 import { initManusRuntime, subscribeSafeAreaInsets } from "@/lib/_core/manus-runtime";
+
+// Keep splash screen visible while loading fonts
+SplashScreen.preventAutoHideAsync();
 
 const DEFAULT_WEB_INSETS: EdgeInsets = { top: 0, right: 0, bottom: 0, left: 0 };
 const DEFAULT_WEB_FRAME: Rect = { x: 0, y: 0, width: 0, height: 0 };
@@ -34,10 +51,29 @@ export default function RootLayout() {
   const [insets, setInsets] = useState<EdgeInsets>(initialInsets);
   const [frame, setFrame] = useState<Rect>(initialFrame);
 
+  // Load custom fonts
+  const [fontsLoaded] = useFonts({
+    CrimsonPro_400Regular,
+    CrimsonPro_500Medium,
+    CrimsonPro_600SemiBold,
+    CrimsonPro_700Bold,
+    Inter_400Regular,
+    Inter_500Medium,
+    Inter_600SemiBold,
+    Inter_700Bold,
+  });
+
   // Initialize Manus runtime for cookie injection from parent container
   useEffect(() => {
     initManusRuntime();
   }, []);
+
+  // Hide splash screen when fonts are loaded
+  useEffect(() => {
+    if (fontsLoaded) {
+      SplashScreen.hideAsync();
+    }
+  }, [fontsLoaded]);
 
   const handleSafeAreaUpdate = useCallback((metrics: Metrics) => {
     setInsets(metrics.insets);
@@ -79,6 +115,15 @@ export default function RootLayout() {
     };
   }, [initialInsets, initialFrame]);
 
+  // Show loading screen while fonts are loading
+  if (!fontsLoaded) {
+    return (
+      <View style={{ flex: 1, backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center' }}>
+        <Text style={{ color: '#6B6B6B' }}>Loading...</Text>
+      </View>
+    );
+  }
+
   const content = (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <trpc.Provider client={trpcClient} queryClient={queryClient}>
@@ -92,7 +137,7 @@ export default function RootLayout() {
               <Stack.Screen name="inspection" />
               <Stack.Screen name="oauth/callback" />
             </Stack>
-            <StatusBar style="auto" />
+            <StatusBar style="dark" />
           </AppProvider>
         </QueryClientProvider>
       </trpc.Provider>

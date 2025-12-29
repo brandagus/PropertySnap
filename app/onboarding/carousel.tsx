@@ -3,7 +3,7 @@ import { View, Text, FlatList, Dimensions, Pressable, StyleSheet } from "react-n
 import { useRouter } from "expo-router";
 import { ScreenContainer } from "@/components/screen-container";
 import { IconSymbol } from "@/components/ui/icon-symbol";
-import { useColors } from "@/hooks/use-colors";
+import { fonts, design } from "@/constants/typography";
 import * as Haptics from "expo-haptics";
 import { Platform } from "react-native";
 
@@ -11,7 +11,7 @@ const { width } = Dimensions.get("window");
 
 interface CarouselItem {
   id: string;
-  icon: "camera.fill" | "doc.text.fill" | "checkmark.circle.fill";
+  icon: "camera.fill" | "doc.text.fill" | "checkmark.shield.fill";
   title: string;
   description: string;
 }
@@ -31,7 +31,7 @@ const carouselData: CarouselItem[] = [
   },
   {
     id: "3",
-    icon: "checkmark.circle.fill",
+    icon: "checkmark.shield.fill",
     title: "Legally-Defensible PDFs",
     description: "Generate professional reports with digital signatures that protect both landlords and tenants.",
   },
@@ -39,7 +39,6 @@ const carouselData: CarouselItem[] = [
 
 export default function CarouselScreen() {
   const router = useRouter();
-  const colors = useColors();
   const [currentIndex, setCurrentIndex] = useState(0);
   const flatListRef = useRef<FlatList>(null);
 
@@ -66,26 +65,23 @@ export default function CarouselScreen() {
 
   const renderItem = ({ item }: { item: CarouselItem }) => (
     <View style={[styles.slide, { width }]}>
-      <View className="w-24 h-24 rounded-full bg-primary/10 items-center justify-center mb-8">
-        <IconSymbol name={item.icon} size={48} color={colors.primary} />
+      <View style={styles.iconContainer}>
+        <IconSymbol name={item.icon} size={48} color="#8B2635" />
       </View>
-      <Text className="text-2xl font-bold text-foreground text-center mb-4 px-8">
-        {item.title}
-      </Text>
-      <Text className="text-base text-muted text-center px-8 leading-6">
-        {item.description}
-      </Text>
+      <Text style={styles.title}>{item.title}</Text>
+      <Text style={styles.description}>{item.description}</Text>
     </View>
   );
 
   const renderPagination = () => (
-    <View className="flex-row justify-center items-center gap-2 mb-8">
+    <View style={styles.paginationContainer}>
       {carouselData.map((_, index) => (
         <View
           key={index}
-          className={`h-2 rounded-full ${
-            index === currentIndex ? "w-8 bg-primary" : "w-2 bg-border"
-          }`}
+          style={[
+            styles.dot,
+            index === currentIndex ? styles.dotActive : styles.dotInactive,
+          ]}
         />
       ))}
     </View>
@@ -93,8 +89,8 @@ export default function CarouselScreen() {
 
   return (
     <ScreenContainer edges={["top", "bottom", "left", "right"]}>
-      <View className="flex-1">
-        <View className="flex-1 justify-center">
+      <View style={styles.container}>
+        <View style={styles.carouselContainer}>
           <FlatList
             ref={flatListRef}
             data={carouselData}
@@ -108,7 +104,7 @@ export default function CarouselScreen() {
           />
         </View>
 
-        <View className="px-6 pb-8">
+        <View style={styles.footer}>
           {renderPagination()}
           
           {currentIndex === carouselData.length - 1 ? (
@@ -116,33 +112,31 @@ export default function CarouselScreen() {
               onPress={handleGetStarted}
               style={({ pressed }) => [
                 styles.primaryButton,
-                { backgroundColor: colors.primary },
                 pressed && styles.buttonPressed,
               ]}
             >
-              <Text className="text-white text-base font-semibold">Get Started</Text>
+              <Text style={styles.primaryButtonText}>Get Started</Text>
             </Pressable>
           ) : (
-            <View className="flex-row gap-4">
+            <View style={styles.buttonRow}>
               <Pressable
                 onPress={handleGetStarted}
                 style={({ pressed }) => [
                   styles.secondaryButton,
-                  { borderColor: colors.border },
-                  pressed && styles.buttonPressed,
+                  pressed && { opacity: 0.7 },
                 ]}
               >
-                <Text className="text-muted text-base font-semibold">Skip</Text>
+                <Text style={styles.secondaryButtonText}>Skip</Text>
               </Pressable>
               <Pressable
                 onPress={handleNext}
                 style={({ pressed }) => [
                   styles.primaryButton,
-                  { backgroundColor: colors.primary, flex: 1 },
+                  { flex: 1 },
                   pressed && styles.buttonPressed,
                 ]}
               >
-                <Text className="text-white text-base font-semibold">Next</Text>
+                <Text style={styles.primaryButtonText}>Next</Text>
               </Pressable>
             </View>
           )}
@@ -153,28 +147,102 @@ export default function CarouselScreen() {
 }
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#FFFFFF",
+  },
+  carouselContainer: {
+    flex: 1,
+    justifyContent: "center",
+  },
   slide: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
+    paddingHorizontal: 32,
+  },
+  iconContainer: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: "#F9F7F4",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 32,
+    borderWidth: 2,
+    borderColor: "#C59849",
+  },
+  title: {
+    fontFamily: fonts.heading,
+    fontSize: 26,
+    color: "#1C2839",
+    textAlign: "center",
+    marginBottom: 16,
+  },
+  description: {
+    fontFamily: fonts.body,
+    fontSize: 16,
+    color: "#6B6B6B",
+    textAlign: "center",
+    lineHeight: 24,
+  },
+  paginationContainer: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 24,
+  },
+  dot: {
+    height: 8,
+    borderRadius: 4,
+    marginHorizontal: 4,
+  },
+  dotActive: {
+    width: 24,
+    backgroundColor: "#8B2635",
+  },
+  dotInactive: {
+    width: 8,
+    backgroundColor: "#E8E6E3",
+  },
+  footer: {
     paddingHorizontal: 24,
+    paddingBottom: 32,
+  },
+  buttonRow: {
+    flexDirection: "row",
+    gap: 12,
   },
   primaryButton: {
-    height: 48,
-    borderRadius: 8,
+    height: 52,
+    backgroundColor: "#8B2635",
+    borderRadius: 6,
     alignItems: "center",
     justifyContent: "center",
+    ...design.shadow.button,
+  },
+  buttonPressed: {
+    backgroundColor: "#6D1E2A",
+    transform: [{ scale: 0.98 }],
+  },
+  primaryButtonText: {
+    fontFamily: fonts.bodySemibold,
+    fontSize: 16,
+    color: "#FFFFFF",
   },
   secondaryButton: {
-    height: 48,
-    borderRadius: 8,
-    borderWidth: 1,
+    height: 52,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: "#8B2635",
+    backgroundColor: "#FFFFFF",
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 24,
   },
-  buttonPressed: {
-    opacity: 0.9,
-    transform: [{ scale: 0.98 }],
+  secondaryButtonText: {
+    fontFamily: fonts.bodySemibold,
+    fontSize: 16,
+    color: "#8B2635",
   },
 });

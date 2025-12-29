@@ -3,8 +3,8 @@ import { View, Text, TextInput, Pressable, StyleSheet, ScrollView, KeyboardAvoid
 import { useRouter } from "expo-router";
 import { ScreenContainer } from "@/components/screen-container";
 import { IconSymbol } from "@/components/ui/icon-symbol";
-import { useColors } from "@/hooks/use-colors";
 import { useApp, generateId, PropertyType } from "@/lib/app-context";
+import { fonts, design } from "@/constants/typography";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
 
@@ -17,7 +17,6 @@ const propertyTypes: { value: PropertyType; label: string }[] = [
 
 export default function CreatePropertyScreen() {
   const router = useRouter();
-  const colors = useColors();
   const { dispatch } = useApp();
   
   const [address, setAddress] = useState("");
@@ -115,34 +114,29 @@ export default function CreatePropertyScreen() {
     min: number,
     max: number
   ) => (
-    <View className="mb-4">
-      <Text className="text-sm font-medium text-foreground mb-2">{label}</Text>
-      <View className="flex-row items-center">
+    <View style={styles.inputGroup}>
+      <Text style={styles.label}>{label}</Text>
+      <View style={styles.numberPickerRow}>
         <Pressable
           onPress={() => value > min && setValue(value - 1)}
           style={({ pressed }) => [
             styles.numberButton,
-            { backgroundColor: colors.surface, borderColor: colors.border },
             pressed && { opacity: 0.7 },
           ]}
         >
-          <Text className="text-xl text-foreground">−</Text>
+          <Text style={styles.numberButtonText}>−</Text>
         </Pressable>
-        <View 
-          className="flex-1 mx-4 h-12 items-center justify-center rounded-lg"
-          style={{ backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border }}
-        >
-          <Text className="text-lg font-semibold text-foreground">{value}</Text>
+        <View style={styles.numberDisplay}>
+          <Text style={styles.numberValue}>{value}</Text>
         </View>
         <Pressable
           onPress={() => value < max && setValue(value + 1)}
           style={({ pressed }) => [
             styles.numberButton,
-            { backgroundColor: colors.surface, borderColor: colors.border },
             pressed && { opacity: 0.7 },
           ]}
         >
-          <Text className="text-xl text-foreground">+</Text>
+          <Text style={styles.numberButtonText}>+</Text>
         </Pressable>
       </View>
     </View>
@@ -152,15 +146,15 @@ export default function CreatePropertyScreen() {
     <ScreenContainer edges={["top", "bottom", "left", "right"]}>
       <KeyboardAvoidingView 
         behavior={Platform.OS === "ios" ? "padding" : "height"}
-        className="flex-1"
+        style={styles.flex}
       >
         <ScrollView 
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
         >
-          <View className="px-6 pt-4">
+          <View style={styles.container}>
             {/* Header */}
-            <View className="flex-row items-center mb-6">
+            <View style={styles.header}>
               <Pressable
                 onPress={() => router.back()}
                 style={({ pressed }) => [
@@ -168,103 +162,85 @@ export default function CreatePropertyScreen() {
                   pressed && { opacity: 0.7 },
                 ]}
               >
-                <IconSymbol name="chevron.left" size={24} color={colors.foreground} />
+                <IconSymbol name="chevron.left" size={24} color="#1C2839" />
               </Pressable>
-              <Text className="text-xl font-bold text-foreground ml-4">Add Property</Text>
+              <Text style={styles.headerTitle}>Add Property</Text>
             </View>
 
             {/* Photo Upload */}
-            <View className="mb-6">
-              <Text className="text-sm font-medium text-foreground mb-2">Property Photo</Text>
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Property Photo</Text>
               {photo ? (
-                <View className="relative">
+                <View style={styles.photoPreviewContainer}>
                   <Image source={{ uri: photo }} style={styles.photoPreview} />
                   <Pressable
                     onPress={() => setPhoto(null)}
-                    style={[styles.removePhotoButton, { backgroundColor: colors.error }]}
+                    style={styles.removePhotoButton}
                   >
                     <IconSymbol name="xmark" size={16} color="#FFFFFF" />
                   </Pressable>
                 </View>
               ) : (
-                <View className="flex-row gap-3">
+                <View style={styles.photoButtonsRow}>
                   <Pressable
                     onPress={handleTakePhoto}
                     style={({ pressed }) => [
                       styles.photoButton,
-                      { backgroundColor: colors.surface, borderColor: colors.border },
                       pressed && { opacity: 0.7 },
                     ]}
                   >
-                    <IconSymbol name="camera.fill" size={24} color={colors.primary} />
-                    <Text className="text-sm text-muted mt-2">Take Photo</Text>
+                    <IconSymbol name="camera.fill" size={24} color="#8B2635" />
+                    <Text style={styles.photoButtonText}>Take Photo</Text>
                   </Pressable>
                   <Pressable
                     onPress={handlePickImage}
                     style={({ pressed }) => [
                       styles.photoButton,
-                      { backgroundColor: colors.surface, borderColor: colors.border },
                       pressed && { opacity: 0.7 },
                     ]}
                   >
-                    <IconSymbol name="photo.fill" size={24} color={colors.primary} />
-                    <Text className="text-sm text-muted mt-2">Choose Photo</Text>
+                    <IconSymbol name="photo.fill" size={24} color="#8B2635" />
+                    <Text style={styles.photoButtonText}>Choose Photo</Text>
                   </Pressable>
                 </View>
               )}
             </View>
 
             {/* Address */}
-            <View className="mb-4">
-              <Text className="text-sm font-medium text-foreground mb-2">Property Address</Text>
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Property Address</Text>
               <TextInput
                 value={address}
                 onChangeText={setAddress}
                 placeholder="Enter the full address"
-                placeholderTextColor={colors.muted}
+                placeholderTextColor="#A8A8A8"
                 multiline
                 numberOfLines={2}
                 style={[
                   styles.input,
                   styles.textArea,
-                  { 
-                    backgroundColor: colors.surface,
-                    borderColor: errors.address ? colors.error : colors.border,
-                    color: colors.foreground,
-                  },
+                  errors.address && styles.inputError,
                 ]}
               />
               {errors.address && (
-                <Text className="text-error text-sm mt-1">{errors.address}</Text>
+                <Text style={styles.errorText}>{errors.address}</Text>
               )}
             </View>
 
             {/* Property Type */}
-            <View className="mb-4">
-              <Text className="text-sm font-medium text-foreground mb-2">Property Type</Text>
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Property Type</Text>
               <Pressable
                 onPress={() => setShowTypePicker(!showTypePicker)}
-                style={[
-                  styles.input,
-                  { 
-                    backgroundColor: colors.surface,
-                    borderColor: colors.border,
-                    flexDirection: "row",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                  },
-                ]}
+                style={styles.selectButton}
               >
-                <Text style={{ color: colors.foreground }}>
+                <Text style={styles.selectButtonText}>
                   {propertyTypes.find(t => t.value === propertyType)?.label}
                 </Text>
-                <IconSymbol name="chevron.right" size={18} color={colors.muted} />
+                <IconSymbol name="chevron.right" size={18} color="#6B6B6B" />
               </Pressable>
               {showTypePicker && (
-                <View 
-                  className="mt-2 rounded-lg overflow-hidden"
-                  style={{ backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border }}
-                >
+                <View style={styles.typePickerContainer}>
                   {propertyTypes.map((type) => (
                     <Pressable
                       key={type.value}
@@ -274,18 +250,18 @@ export default function CreatePropertyScreen() {
                       }}
                       style={({ pressed }) => [
                         styles.typeOption,
-                        propertyType === type.value && { backgroundColor: `${colors.primary}15` },
+                        propertyType === type.value && styles.typeOptionSelected,
                         pressed && { opacity: 0.7 },
                       ]}
                     >
-                      <Text 
-                        className="text-base"
-                        style={{ color: propertyType === type.value ? colors.primary : colors.foreground }}
-                      >
+                      <Text style={[
+                        styles.typeOptionText,
+                        propertyType === type.value && styles.typeOptionTextSelected,
+                      ]}>
                         {type.label}
                       </Text>
                       {propertyType === type.value && (
-                        <IconSymbol name="checkmark.circle.fill" size={20} color={colors.primary} />
+                        <IconSymbol name="checkmark.circle.fill" size={20} color="#8B2635" />
                       )}
                     </Pressable>
                   ))}
@@ -305,11 +281,11 @@ export default function CreatePropertyScreen() {
               disabled={isLoading}
               style={({ pressed }) => [
                 styles.submitButton,
-                { backgroundColor: isLoading ? colors.muted : colors.primary },
+                isLoading && styles.submitButtonDisabled,
                 pressed && !isLoading && styles.buttonPressed,
               ]}
             >
-              <Text className="text-white text-base font-semibold">
+              <Text style={styles.submitButtonText}>
                 {isLoading ? "Creating..." : "Create Property"}
               </Text>
             </Pressable>
@@ -321,40 +297,99 @@ export default function CreatePropertyScreen() {
 }
 
 const styles = StyleSheet.create({
+  flex: {
+    flex: 1,
+  },
   scrollContent: {
     flexGrow: 1,
     paddingBottom: 32,
   },
+  container: {
+    flex: 1,
+    backgroundColor: "#FFFFFF",
+    paddingHorizontal: 24,
+    paddingTop: 16,
+  },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 24,
+  },
   backButton: {
-    width: 40,
-    height: 40,
+    width: 44,
+    height: 44,
     justifyContent: "center",
+  },
+  headerTitle: {
+    fontFamily: fonts.heading,
+    fontSize: 24,
+    color: "#1C2839",
+    marginLeft: 8,
+  },
+  inputGroup: {
+    marginBottom: 20,
+  },
+  label: {
+    fontFamily: fonts.bodyMedium,
+    fontSize: 14,
+    color: "#1C2839",
+    marginBottom: 8,
   },
   input: {
     height: 48,
+    backgroundColor: "#F5F3F0",
     borderWidth: 1,
-    borderRadius: 8,
+    borderColor: "#E8E6E3",
+    borderRadius: 6,
     paddingHorizontal: 16,
-    fontSize: 16,
+    fontFamily: fonts.body,
+    fontSize: 15,
+    color: "#3A3A3A",
   },
   textArea: {
     height: 80,
     paddingTop: 12,
     textAlignVertical: "top",
   },
+  inputError: {
+    borderWidth: 2,
+    borderColor: "#991B1B",
+    backgroundColor: "#FEF2F2",
+  },
+  errorText: {
+    fontFamily: fonts.body,
+    fontSize: 13,
+    color: "#991B1B",
+    marginTop: 4,
+  },
+  photoButtonsRow: {
+    flexDirection: "row",
+    gap: 12,
+  },
   photoButton: {
     flex: 1,
     height: 100,
-    borderRadius: 12,
+    backgroundColor: "#F9F7F4",
+    borderRadius: 8,
     borderWidth: 1,
+    borderColor: "#E8E6E3",
     borderStyle: "dashed",
     alignItems: "center",
     justifyContent: "center",
   },
+  photoButtonText: {
+    fontFamily: fonts.body,
+    fontSize: 13,
+    color: "#6B6B6B",
+    marginTop: 8,
+  },
+  photoPreviewContainer: {
+    position: "relative",
+  },
   photoPreview: {
     width: "100%",
     height: 200,
-    borderRadius: 12,
+    borderRadius: 8,
   },
   removePhotoButton: {
     position: "absolute",
@@ -363,16 +398,33 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
+    backgroundColor: "#991B1B",
     alignItems: "center",
     justifyContent: "center",
   },
-  numberButton: {
-    width: 48,
+  selectButton: {
     height: 48,
+    backgroundColor: "#F5F3F0",
+    borderWidth: 1,
+    borderColor: "#E8E6E3",
+    borderRadius: 6,
+    paddingHorizontal: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  selectButtonText: {
+    fontFamily: fonts.body,
+    fontSize: 15,
+    color: "#3A3A3A",
+  },
+  typePickerContainer: {
+    marginTop: 8,
+    backgroundColor: "#FFFFFF",
     borderRadius: 8,
     borderWidth: 1,
-    alignItems: "center",
-    justifyContent: "center",
+    borderColor: "#E8E6E3",
+    overflow: "hidden",
   },
   typeOption: {
     flexDirection: "row",
@@ -380,17 +432,74 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: "#E2E8F0",
+    borderBottomColor: "#E8E6E3",
+  },
+  typeOptionSelected: {
+    backgroundColor: "#F9F7F4",
+  },
+  typeOptionText: {
+    fontFamily: fonts.body,
+    fontSize: 15,
+    color: "#3A3A3A",
+  },
+  typeOptionTextSelected: {
+    fontFamily: fonts.bodyMedium,
+    color: "#8B2635",
+  },
+  numberPickerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  numberButton: {
+    width: 48,
+    height: 48,
+    backgroundColor: "#F5F3F0",
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: "#E8E6E3",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  numberButtonText: {
+    fontFamily: fonts.bodySemibold,
+    fontSize: 20,
+    color: "#1C2839",
+  },
+  numberDisplay: {
+    flex: 1,
+    marginHorizontal: 16,
+    height: 48,
+    backgroundColor: "#F5F3F0",
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: "#E8E6E3",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  numberValue: {
+    fontFamily: fonts.bodySemibold,
+    fontSize: 18,
+    color: "#1C2839",
   },
   submitButton: {
-    height: 48,
-    borderRadius: 8,
+    height: 52,
+    backgroundColor: "#8B2635",
+    borderRadius: 6,
     alignItems: "center",
     justifyContent: "center",
     marginTop: 24,
+    ...design.shadow.button,
+  },
+  submitButtonDisabled: {
+    backgroundColor: "#A8A8A8",
   },
   buttonPressed: {
-    opacity: 0.9,
+    backgroundColor: "#6D1E2A",
     transform: [{ scale: 0.98 }],
+  },
+  submitButtonText: {
+    fontFamily: fonts.bodySemibold,
+    fontSize: 16,
+    color: "#FFFFFF",
   },
 });

@@ -3,13 +3,12 @@ import { View, Text, TextInput, Pressable, StyleSheet, ScrollView, KeyboardAvoid
 import { useRouter } from "expo-router";
 import { ScreenContainer } from "@/components/screen-container";
 import { IconSymbol } from "@/components/ui/icon-symbol";
-import { useColors } from "@/hooks/use-colors";
 import { useApp, generateId } from "@/lib/app-context";
+import { fonts, design } from "@/constants/typography";
 import * as Haptics from "expo-haptics";
 
 export default function SignupScreen() {
   const router = useRouter();
-  const colors = useColors();
   const { dispatch } = useApp();
   
   const [email, setEmail] = useState("");
@@ -25,7 +24,6 @@ export default function SignupScreen() {
   };
 
   const validatePassword = (password: string) => {
-    // Min 8 characters, 1 uppercase, 1 number
     const hasMinLength = password.length >= 8;
     const hasUppercase = /[A-Z]/.test(password);
     const hasNumber = /[0-9]/.test(password);
@@ -68,7 +66,6 @@ export default function SignupScreen() {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     }
 
-    // Simulate signup - in production this would call an API
     setTimeout(() => {
       const user = {
         id: generateId(),
@@ -89,13 +86,13 @@ export default function SignupScreen() {
     <ScreenContainer edges={["top", "bottom", "left", "right"]}>
       <KeyboardAvoidingView 
         behavior={Platform.OS === "ios" ? "padding" : "height"}
-        className="flex-1"
+        style={styles.flex}
       >
         <ScrollView 
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
         >
-          <View className="px-6 pt-12">
+          <View style={styles.container}>
             {/* Header */}
             <Pressable
               onPress={() => router.back()}
@@ -104,62 +101,50 @@ export default function SignupScreen() {
                 pressed && { opacity: 0.7 },
               ]}
             >
-              <IconSymbol name="chevron.left" size={24} color={colors.foreground} />
+              <IconSymbol name="chevron.left" size={24} color="#1C2839" />
             </Pressable>
 
-            <Text className="text-3xl font-bold text-foreground mt-6 mb-2">
-              Create Account
-            </Text>
-            <Text className="text-base text-muted mb-8">
-              Sign up to start documenting your properties
-            </Text>
+            <Text style={styles.title}>Create Account</Text>
+            <Text style={styles.subtitle}>Sign up to start documenting your properties</Text>
 
             {/* Form */}
-            <View className="gap-4">
+            <View style={styles.form}>
               {/* Email */}
-              <View>
-                <Text className="text-sm font-medium text-foreground mb-2">Email</Text>
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Email</Text>
                 <TextInput
                   value={email}
                   onChangeText={setEmail}
                   placeholder="Enter your email"
-                  placeholderTextColor={colors.muted}
+                  placeholderTextColor="#A8A8A8"
                   keyboardType="email-address"
                   autoCapitalize="none"
                   autoComplete="email"
                   style={[
                     styles.input,
-                    { 
-                      backgroundColor: colors.surface,
-                      borderColor: errors.email ? colors.error : colors.border,
-                      color: colors.foreground,
-                    },
+                    errors.email && styles.inputError,
                   ]}
                 />
                 {errors.email && (
-                  <Text className="text-error text-sm mt-1">{errors.email}</Text>
+                  <Text style={styles.errorText}>{errors.email}</Text>
                 )}
               </View>
 
               {/* Password */}
-              <View>
-                <Text className="text-sm font-medium text-foreground mb-2">Password</Text>
-                <View className="relative">
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Password</Text>
+                <View style={styles.passwordContainer}>
                   <TextInput
                     value={password}
                     onChangeText={setPassword}
                     placeholder="Create a password"
-                    placeholderTextColor={colors.muted}
+                    placeholderTextColor="#A8A8A8"
                     secureTextEntry={!showPassword}
                     autoCapitalize="none"
                     style={[
                       styles.input,
-                      { 
-                        backgroundColor: colors.surface,
-                        borderColor: errors.password ? colors.error : colors.border,
-                        color: colors.foreground,
-                        paddingRight: 48,
-                      },
+                      styles.passwordInput,
+                      errors.password && styles.inputError,
                     ]}
                   />
                   <Pressable
@@ -169,36 +154,32 @@ export default function SignupScreen() {
                     <IconSymbol 
                       name={showPassword ? "eye.slash.fill" : "eye.fill"} 
                       size={20} 
-                      color={colors.muted} 
+                      color="#6B6B6B" 
                     />
                   </Pressable>
                 </View>
                 {errors.password && (
-                  <Text className="text-error text-sm mt-1">{errors.password}</Text>
+                  <Text style={styles.errorText}>{errors.password}</Text>
                 )}
               </View>
 
               {/* Confirm Password */}
-              <View>
-                <Text className="text-sm font-medium text-foreground mb-2">Confirm Password</Text>
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Confirm Password</Text>
                 <TextInput
                   value={confirmPassword}
                   onChangeText={setConfirmPassword}
                   placeholder="Confirm your password"
-                  placeholderTextColor={colors.muted}
+                  placeholderTextColor="#A8A8A8"
                   secureTextEntry={!showPassword}
                   autoCapitalize="none"
                   style={[
                     styles.input,
-                    { 
-                      backgroundColor: colors.surface,
-                      borderColor: errors.confirmPassword ? colors.error : colors.border,
-                      color: colors.foreground,
-                    },
+                    errors.confirmPassword && styles.inputError,
                   ]}
                 />
                 {errors.confirmPassword && (
-                  <Text className="text-error text-sm mt-1">{errors.confirmPassword}</Text>
+                  <Text style={styles.errorText}>{errors.confirmPassword}</Text>
                 )}
               </View>
             </View>
@@ -209,26 +190,21 @@ export default function SignupScreen() {
               disabled={isLoading}
               style={({ pressed }) => [
                 styles.submitButton,
-                { backgroundColor: isLoading ? colors.muted : colors.primary },
+                isLoading && styles.submitButtonDisabled,
                 pressed && !isLoading && styles.buttonPressed,
               ]}
             >
-              <Text className="text-white text-base font-semibold">
+              <Text style={styles.submitButtonText}>
                 {isLoading ? "Creating Account..." : "Create Account"}
               </Text>
             </Pressable>
 
             {/* Login Link */}
-            <View className="mt-6 items-center">
-              <Text className="text-sm text-muted">
-                Already have an account?{" "}
-                <Text 
-                  className="text-primary font-semibold"
-                  onPress={() => router.replace("/auth/login")}
-                >
-                  Log in
-                </Text>
-              </Text>
+            <View style={styles.footer}>
+              <Text style={styles.footerText}>Already have an account? </Text>
+              <Pressable onPress={() => router.replace("/auth/login")}>
+                <Text style={styles.loginLink}>Log in</Text>
+              </Pressable>
             </View>
           </View>
         </ScrollView>
@@ -238,35 +214,116 @@ export default function SignupScreen() {
 }
 
 const styles = StyleSheet.create({
+  flex: {
+    flex: 1,
+  },
   scrollContent: {
     flexGrow: 1,
   },
+  container: {
+    flex: 1,
+    backgroundColor: "#FFFFFF",
+    paddingHorizontal: 24,
+    paddingTop: 48,
+  },
   backButton: {
-    width: 40,
-    height: 40,
+    width: 44,
+    height: 44,
     justifyContent: "center",
+  },
+  title: {
+    fontFamily: fonts.heading,
+    fontSize: 32,
+    color: "#1C2839",
+    marginTop: 24,
+    marginBottom: 8,
+  },
+  subtitle: {
+    fontFamily: fonts.body,
+    fontSize: 16,
+    color: "#6B6B6B",
+    marginBottom: 32,
+  },
+  form: {
+    gap: 20,
+  },
+  inputGroup: {
+    gap: 8,
+  },
+  label: {
+    fontFamily: fonts.bodyMedium,
+    fontSize: 14,
+    color: "#1C2839",
   },
   input: {
     height: 48,
+    backgroundColor: "#F5F3F0",
     borderWidth: 1,
-    borderRadius: 8,
+    borderColor: "#E8E6E3",
+    borderRadius: 6,
     paddingHorizontal: 16,
-    fontSize: 16,
+    fontFamily: fonts.body,
+    fontSize: 15,
+    color: "#3A3A3A",
+  },
+  inputError: {
+    borderWidth: 2,
+    borderColor: "#991B1B",
+    backgroundColor: "#FEF2F2",
+  },
+  passwordContainer: {
+    position: "relative",
+  },
+  passwordInput: {
+    paddingRight: 48,
   },
   eyeButton: {
     position: "absolute",
     right: 12,
     top: 14,
+    padding: 4,
+  },
+  errorText: {
+    fontFamily: fonts.body,
+    fontSize: 13,
+    color: "#991B1B",
   },
   submitButton: {
-    height: 48,
-    borderRadius: 8,
+    height: 52,
+    backgroundColor: "#8B2635",
+    borderRadius: 6,
     alignItems: "center",
     justifyContent: "center",
-    marginTop: 24,
+    marginTop: 32,
+    ...design.shadow.button,
+  },
+  submitButtonDisabled: {
+    backgroundColor: "#A8A8A8",
   },
   buttonPressed: {
-    opacity: 0.9,
+    backgroundColor: "#6D1E2A",
     transform: [{ scale: 0.98 }],
+  },
+  submitButtonText: {
+    fontFamily: fonts.bodySemibold,
+    fontSize: 16,
+    color: "#FFFFFF",
+  },
+  footer: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 24,
+    paddingBottom: 32,
+  },
+  footerText: {
+    fontFamily: fonts.body,
+    fontSize: 15,
+    color: "#6B6B6B",
+  },
+  loginLink: {
+    fontFamily: fonts.bodySemibold,
+    fontSize: 15,
+    color: "#8B2635",
   },
 });

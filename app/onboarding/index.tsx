@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { View, Text, Image, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
 import { ScreenContainer } from "@/components/screen-container";
+import { fonts, design } from "@/constants/typography";
 import Animated, { 
   useSharedValue, 
   useAnimatedStyle, 
@@ -43,8 +44,8 @@ export default function SplashScreen() {
 
   return (
     <ScreenContainer edges={["top", "bottom", "left", "right"]}>
-      <View className="flex-1 items-center justify-center bg-primary">
-        <Animated.View style={logoAnimatedStyle}>
+      <View style={styles.container}>
+        <Animated.View style={[styles.logoContainer, logoAnimatedStyle]}>
           <Image
             source={require("@/assets/images/icon.png")}
             style={styles.logo}
@@ -52,7 +53,7 @@ export default function SplashScreen() {
           />
         </Animated.View>
         <Animated.View style={taglineAnimatedStyle}>
-          <Text className="text-white text-lg font-medium mt-6 text-center px-8">
+          <Text style={styles.tagline}>
             Protect your bond, every time
           </Text>
         </Animated.View>
@@ -62,9 +63,31 @@ export default function SplashScreen() {
 }
 
 const styles = StyleSheet.create({
-  logo: {
+  container: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#8B2635", // Burgundy
+  },
+  logoContainer: {
     width: 120,
     height: 120,
     borderRadius: 24,
+    backgroundColor: "#FFFFFF",
+    alignItems: "center",
+    justifyContent: "center",
+    ...design.shadow.card,
+  },
+  logo: {
+    width: 80,
+    height: 80,
+  },
+  tagline: {
+    fontFamily: fonts.body,
+    fontSize: 18,
+    color: "#FFFFFF",
+    marginTop: 24,
+    textAlign: "center",
+    paddingHorizontal: 32,
   },
 });

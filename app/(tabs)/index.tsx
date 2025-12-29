@@ -3,18 +3,27 @@ import { View, Text, FlatList, Pressable, StyleSheet, Image } from "react-native
 import { useRouter } from "expo-router";
 import { ScreenContainer } from "@/components/screen-container";
 import { IconSymbol } from "@/components/ui/icon-symbol";
-import { useColors } from "@/hooks/use-colors";
 import { useApp, Property } from "@/lib/app-context";
+import { fonts, design } from "@/constants/typography";
 import * as Haptics from "expo-haptics";
 import { Platform } from "react-native";
 
-function getStatusColor(property: Property, colors: ReturnType<typeof useColors>) {
+function getStatusColor(property: Property) {
   const hasActiveInspection = property.inspections.some(i => i.status === "pending");
   const hasCompletedInspection = property.inspections.some(i => i.status === "completed");
   
-  if (hasActiveInspection) return colors.warning;
-  if (hasCompletedInspection) return colors.success;
-  return colors.muted;
+  if (hasActiveInspection) return "#D97706"; // Amber
+  if (hasCompletedInspection) return "#2D5C3F"; // Forest green
+  return "#6B6B6B"; // Warm gray
+}
+
+function getStatusBgColor(property: Property) {
+  const hasActiveInspection = property.inspections.some(i => i.status === "pending");
+  const hasCompletedInspection = property.inspections.some(i => i.status === "completed");
+  
+  if (hasActiveInspection) return "#FFF3E0"; // Light amber
+  if (hasCompletedInspection) return "#E8F5E9"; // Light green
+  return "#F5F3F0"; // Soft gray
 }
 
 function getStatusText(property: Property) {
@@ -28,10 +37,8 @@ function getStatusText(property: Property) {
 
 export default function HomeScreen() {
   const router = useRouter();
-  const colors = useColors();
-  const { state, dispatch } = useApp();
+  const { state } = useApp();
 
-  // Redirect to onboarding if not onboarded
   useEffect(() => {
     if (!state.isLoading && !state.isOnboarded) {
       router.replace("/onboarding");
@@ -57,90 +64,78 @@ export default function HomeScreen() {
       onPress={() => handlePropertyPress(item)}
       style={({ pressed }) => [
         styles.propertyCard,
-        { backgroundColor: colors.surface, borderColor: colors.border },
         pressed && styles.cardPressed,
       ]}
     >
-      <View className="flex-row items-center">
+      <View style={styles.cardContent}>
         {item.photo ? (
           <Image source={{ uri: item.photo }} style={styles.propertyImage} />
         ) : (
-          <View 
-            style={[styles.propertyImage, styles.placeholderImage]}
-            className="items-center justify-center"
-          >
-            <IconSymbol name="building.2.fill" size={32} color={colors.muted} />
+          <View style={[styles.propertyImage, styles.placeholderImage]}>
+            <IconSymbol name="building.2.fill" size={32} color="#6B6B6B" />
           </View>
         )}
-        <View className="flex-1 ml-4">
-          <Text className="text-base font-semibold text-foreground" numberOfLines={2}>
+        <View style={styles.propertyInfo}>
+          <Text style={styles.propertyAddress} numberOfLines={2}>
             {item.address}
           </Text>
-          <Text className="text-sm text-muted mt-1">
+          <Text style={styles.propertyDetails}>
             {item.propertyType.charAt(0).toUpperCase() + item.propertyType.slice(1)} • {item.bedrooms} bed • {item.bathrooms} bath
           </Text>
-          <View 
-            style={[styles.statusBadge, { backgroundColor: getStatusColor(item, colors) }]}
-            className="mt-2 self-start"
-          >
-            <Text className="text-xs font-medium text-white">
+          <View style={[styles.statusBadge, { backgroundColor: getStatusBgColor(item), borderColor: getStatusColor(item) }]}>
+            <Text style={[styles.statusText, { color: getStatusColor(item) }]}>
               {getStatusText(item)}
             </Text>
           </View>
         </View>
-        <IconSymbol name="chevron.right" size={20} color={colors.muted} />
+        <IconSymbol name="chevron.right" size={20} color="#6B6B6B" />
       </View>
     </Pressable>
   );
 
   const renderEmptyState = () => (
-    <View className="flex-1 items-center justify-center px-8">
-      <View 
-        className="w-24 h-24 rounded-full items-center justify-center mb-6"
-        style={{ backgroundColor: `${colors.primary}15` }}
-      >
-        <IconSymbol name="building.2.fill" size={48} color={colors.primary} />
+    <View style={styles.emptyState}>
+      <View style={styles.emptyIconContainer}>
+        <IconSymbol name="building.2.fill" size={48} color="#8B2635" />
       </View>
-      <Text className="text-xl font-semibold text-foreground text-center mb-2">
-        No Properties Yet
-      </Text>
-      <Text className="text-base text-muted text-center mb-8">
+      <Text style={styles.emptyTitle}>No Properties Yet</Text>
+      <Text style={styles.emptyDescription}>
         Add your first property to start documenting inspections
       </Text>
       <Pressable
         onPress={handleAddProperty}
         style={({ pressed }) => [
           styles.addButton,
-          { backgroundColor: colors.primary },
           pressed && styles.buttonPressed,
         ]}
       >
         <IconSymbol name="plus" size={20} color="#FFFFFF" />
-        <Text className="text-white text-base font-semibold ml-2">Add Property</Text>
+        <Text style={styles.addButtonText}>Add Property</Text>
       </Pressable>
     </View>
   );
 
   if (state.isLoading) {
     return (
-      <ScreenContainer className="items-center justify-center">
-        <Text className="text-muted">Loading...</Text>
+      <ScreenContainer>
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>Loading...</Text>
+        </View>
       </ScreenContainer>
     );
   }
 
   return (
     <ScreenContainer>
-      <View className="flex-1">
+      <View style={styles.container}>
         {/* Header */}
-        <View className="flex-row items-center justify-between px-6 py-4">
-          <Text className="text-2xl font-bold text-foreground">My Properties</Text>
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>My Properties</Text>
           {state.properties.length > 0 && (
             <Pressable
               onPress={handleAddProperty}
               style={({ pressed }) => [
                 styles.headerAddButton,
-                { backgroundColor: colors.primary },
                 pressed && { opacity: 0.8 },
               ]}
             >
@@ -167,24 +162,61 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#FFFFFF",
+  },
+  loadingContainer: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  loadingText: {
+    fontFamily: fonts.body,
+    fontSize: 15,
+    color: "#6B6B6B",
+  },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 24,
+    paddingVertical: 16,
+  },
+  headerTitle: {
+    fontFamily: fonts.heading,
+    fontSize: 28,
+    color: "#1C2839",
+  },
+  headerAddButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "#8B2635",
+    alignItems: "center",
+    justifyContent: "center",
+    ...design.shadow.button,
+  },
   listContent: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 24,
     paddingBottom: 24,
   },
   propertyCard: {
-    padding: 16,
-    borderRadius: 12,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 8,
     borderWidth: 1,
-    marginBottom: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    borderColor: "#E8E6E3",
+    marginBottom: 16,
+    padding: 20,
+    ...design.shadow.card,
   },
   cardPressed: {
-    opacity: 0.7,
+    borderColor: "#C59849",
     transform: [{ scale: 0.98 }],
+  },
+  cardContent: {
+    flexDirection: "row",
+    alignItems: "center",
   },
   propertyImage: {
     width: 80,
@@ -192,29 +224,86 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   placeholderImage: {
-    backgroundColor: "#F1F5F9",
-  },
-  statusBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
-  },
-  headerAddButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    backgroundColor: "#F9F7F4",
     alignItems: "center",
     justifyContent: "center",
+  },
+  propertyInfo: {
+    flex: 1,
+    marginLeft: 16,
+  },
+  propertyAddress: {
+    fontFamily: fonts.headingSemibold,
+    fontSize: 18,
+    color: "#1C2839",
+    marginBottom: 4,
+  },
+  propertyDetails: {
+    fontFamily: fonts.body,
+    fontSize: 14,
+    color: "#6B6B6B",
+    marginBottom: 8,
+  },
+  statusBadge: {
+    alignSelf: "flex-start",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 4,
+    borderWidth: 1,
+  },
+  statusText: {
+    fontFamily: fonts.bodyMedium,
+    fontSize: 12,
+  },
+  emptyState: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 32,
+  },
+  emptyIconContainer: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: "#F9F7F4",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 24,
+    borderWidth: 2,
+    borderColor: "#C59849",
+  },
+  emptyTitle: {
+    fontFamily: fonts.heading,
+    fontSize: 24,
+    color: "#1C2839",
+    textAlign: "center",
+    marginBottom: 8,
+  },
+  emptyDescription: {
+    fontFamily: fonts.body,
+    fontSize: 16,
+    color: "#6B6B6B",
+    textAlign: "center",
+    marginBottom: 32,
+    lineHeight: 24,
   },
   addButton: {
     flexDirection: "row",
     alignItems: "center",
+    backgroundColor: "#8B2635",
     paddingHorizontal: 24,
     paddingVertical: 14,
-    borderRadius: 8,
+    borderRadius: 6,
+    ...design.shadow.button,
   },
   buttonPressed: {
-    opacity: 0.9,
+    backgroundColor: "#6D1E2A",
     transform: [{ scale: 0.98 }],
+  },
+  addButtonText: {
+    fontFamily: fonts.bodySemibold,
+    fontSize: 16,
+    color: "#FFFFFF",
+    marginLeft: 8,
   },
 });
