@@ -42,7 +42,11 @@ export default function PropertyDetailScreen() {
       createdAt: new Date().toISOString(),
       completedAt: null,
       landlordSignature: null,
+      landlordName: null,
+      landlordSignedAt: null,
       tenantSignature: null,
+      tenantName: null,
+      tenantSignedAt: null,
       checkpoints: createDefaultCheckpoints(getDefaultRooms()),
     };
 

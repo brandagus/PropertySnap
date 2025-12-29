@@ -1,20 +1,21 @@
 import { useMemo, useState } from "react";
-import { View, Text, Pressable, StyleSheet, ScrollView, Image, TextInput } from "react-native";
+import { View, Text, Pressable, StyleSheet, ScrollView, Image, TextInput, Alert, ActivityIndicator } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { ScreenContainer } from "@/components/screen-container";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useColors } from "@/hooks/use-colors";
 import { useApp, Checkpoint, ConditionRating, generateId } from "@/lib/app-context";
+import { generateInspectionPDF, sharePDF, printPDF } from "@/lib/pdf-service";
 import * as Haptics from "expo-haptics";
 import { Platform } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 
 const conditionOptions: { value: ConditionRating; label: string; color: string }[] = [
-  { value: "excellent", label: "Excellent", color: "#10B981" },
-  { value: "good", label: "Good", color: "#22C55E" },
-  { value: "fair", label: "Fair", color: "#F59E0B" },
-  { value: "poor", label: "Poor", color: "#EF4444" },
-  { value: "damaged", label: "Damaged", color: "#DC2626" },
+  { value: "excellent", label: "Excellent", color: "#2D5C3F" },
+  { value: "good", label: "Good", color: "#4A7C59" },
+  { value: "fair", label: "Fair", color: "#D97706" },
+  { value: "poor", label: "Poor", color: "#C2410C" },
+  { value: "damaged", label: "Damaged", color: "#991B1B" },
 ];
 
 export default function InspectionDetailScreen() {
@@ -24,6 +25,8 @@ export default function InspectionDetailScreen() {
   const { state, dispatch } = useApp();
   const [expandedRoom, setExpandedRoom] = useState<string | null>(null);
   const [showConditionPicker, setShowConditionPicker] = useState<string | null>(null);
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const [showExportMenu, setShowExportMenu] = useState(false);
 
   // Find the inspection and its property
   const { inspection, property } = useMemo(() => {
@@ -165,6 +168,60 @@ export default function InspectionDetailScreen() {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     }
     router.push(`/inspection/signature?inspectionId=${inspection.id}`);
+  };
+
+  // PDF Generation Handlers
+  const handleExportPDF = async () => {
+    setShowExportMenu(false);
+    setIsGeneratingPDF(true);
+    
+    try {
+      if (Platform.OS !== "web") {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      }
+      
+      const { uri } = await generateInspectionPDF(property, inspection);
+      await sharePDF(uri);
+      
+      if (Platform.OS !== "web") {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      }
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      Alert.alert(
+        "Export Failed",
+        "Unable to generate the PDF report. Please try again.",
+        [{ text: "OK" }]
+      );
+    } finally {
+      setIsGeneratingPDF(false);
+    }
+  };
+
+  const handlePrintPDF = async () => {
+    setShowExportMenu(false);
+    setIsGeneratingPDF(true);
+    
+    try {
+      if (Platform.OS !== "web") {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      }
+      
+      await printPDF(property, inspection);
+      
+      if (Platform.OS !== "web") {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      }
+    } catch (error) {
+      console.error("Error printing PDF:", error);
+      Alert.alert(
+        "Print Failed",
+        "Unable to print the report. Please try again.",
+        [{ text: "OK" }]
+      );
+    } finally {
+      setIsGeneratingPDF(false);
+    }
   };
 
   const renderCheckpoint = (checkpoint: Checkpoint) => (
@@ -335,7 +392,71 @@ export default function InspectionDetailScreen() {
             {property.address}
           </Text>
         </View>
+        
+        {/* Export Button */}
+        <Pressable
+          onPress={() => setShowExportMenu(!showExportMenu)}
+          disabled={isGeneratingPDF}
+          style={({ pressed }) => [
+            styles.exportButton,
+            { backgroundColor: colors.accent },
+            pressed && { opacity: 0.9 },
+            isGeneratingPDF && { opacity: 0.6 },
+          ]}
+        >
+          {isGeneratingPDF ? (
+            <ActivityIndicator size="small" color="#FFFFFF" />
+          ) : (
+            <>
+              <IconSymbol name="doc.fill" size={16} color="#FFFFFF" />
+              <Text className="text-white text-sm font-medium ml-1">PDF</Text>
+            </>
+          )}
+        </Pressable>
       </View>
+
+      {/* Export Menu Dropdown */}
+      {showExportMenu && (
+        <View 
+          className="absolute right-6 z-50 rounded-lg overflow-hidden"
+          style={[
+            styles.exportMenu,
+            { 
+              backgroundColor: colors.background,
+              borderColor: colors.border,
+              top: 70,
+            }
+          ]}
+        >
+          <Pressable
+            onPress={handleExportPDF}
+            style={({ pressed }) => [
+              styles.exportMenuItem,
+              { backgroundColor: pressed ? colors.surface : colors.background },
+            ]}
+          >
+            <IconSymbol name="square.and.arrow.up" size={18} color={colors.primary} />
+            <View className="ml-3">
+              <Text className="text-foreground font-medium">Share PDF</Text>
+              <Text className="text-muted text-xs">Export and share report</Text>
+            </View>
+          </Pressable>
+          <View style={{ height: 1, backgroundColor: colors.border }} />
+          <Pressable
+            onPress={handlePrintPDF}
+            style={({ pressed }) => [
+              styles.exportMenuItem,
+              { backgroundColor: pressed ? colors.surface : colors.background },
+            ]}
+          >
+            <IconSymbol name="printer.fill" size={18} color={colors.primary} />
+            <View className="ml-3">
+              <Text className="text-foreground font-medium">Print Report</Text>
+              <Text className="text-muted text-xs">Print directly</Text>
+            </View>
+          </Pressable>
+        </View>
+      )}
 
       {/* Progress Bar */}
       <View className="px-6 mb-4">
@@ -425,6 +546,14 @@ export default function InspectionDetailScreen() {
           </Text>
         </Pressable>
       </View>
+
+      {/* Overlay to close export menu */}
+      {showExportMenu && (
+        <Pressable
+          onPress={() => setShowExportMenu(false)}
+          style={StyleSheet.absoluteFill}
+        />
+      )}
     </ScreenContainer>
   );
 }
@@ -434,6 +563,27 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     justifyContent: "center",
+  },
+  exportButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  exportMenu: {
+    width: 200,
+    borderWidth: 1,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  exportMenuItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 14,
   },
   roomHeader: {
     flexDirection: "row",
@@ -493,7 +643,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     padding: 12,
     borderBottomWidth: 1,
-    borderBottomColor: "#E2E8F0",
+    borderBottomColor: "#E8E6E3",
   },
   notesInput: {
     borderWidth: 1,

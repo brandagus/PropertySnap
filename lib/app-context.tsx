@@ -30,7 +30,11 @@ export interface Inspection {
   createdAt: string;
   completedAt: string | null;
   landlordSignature: string | null;
+  landlordName: string | null;
+  landlordSignedAt: string | null;
   tenantSignature: string | null;
+  tenantName: string | null;
+  tenantSignedAt: string | null;
   checkpoints: Checkpoint[];
 }
 

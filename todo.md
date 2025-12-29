@@ -45,9 +45,9 @@
 - [x] Clear signature button
 - [x] Print name field
 - [x] Auto-filled date
-- [ ] PDF generation with cover page
-- [ ] PDF room-by-room breakdown
-- [ ] Export options (email, save, share)
+- [x] PDF generation with cover page
+- [x] PDF room-by-room breakdown
+- [x] Export options (email, save, share)
 
 ## Archive & History
 - [x] Archive screen with search and filters
@@ -101,3 +101,13 @@
 - [x] Update badge styles for scores and status
 - [x] Remove dark mode support (light only for professional look)
 - [x] Update all screens with new design system
+
+## PDF Generation Feature
+- [x] Install expo-print and expo-sharing packages
+- [x] Create PDF service with HTML template generation
+- [x] Build cover page with property info and inspection date
+- [x] Add room-by-room breakdown with photos and conditions
+- [x] Include signature section with landlord and tenant signatures
+- [x] Add export options (share, save, email)
+- [x] Integrate PDF generation button in inspection detail screen
+- [x] Add loading state during PDF generation
