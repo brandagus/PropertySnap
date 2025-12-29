@@ -33,6 +33,11 @@ import {
 
 import { trpc, createTRPCClient } from "@/lib/trpc";
 import { initManusRuntime, subscribeSafeAreaInsets } from "@/lib/_core/manus-runtime";
+import { useRouter } from "expo-router";
+import {
+  requestNotificationPermissions,
+  addNotificationResponseListener,
+} from "@/lib/notification-service";
 
 // Keep splash screen visible while loading fonts
 SplashScreen.preventAutoHideAsync();
@@ -66,6 +71,13 @@ export default function RootLayout() {
   // Initialize Manus runtime for cookie injection from parent container
   useEffect(() => {
     initManusRuntime();
+  }, []);
+
+  // Request notification permissions on app start
+  useEffect(() => {
+    if (Platform.OS !== "web") {
+      requestNotificationPermissions();
+    }
   }, []);
 
   // Hide splash screen when fonts are loaded

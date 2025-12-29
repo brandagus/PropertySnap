@@ -82,6 +82,9 @@ const MAPPING = {
   "viewfinder": "crop-free",
   "location.fill": "location-on",
   "arrow.triangle.2.circlepath.camera.fill": "flip-camera-ios",
+  
+  // Time
+  "clock.fill": "schedule",
 } as IconMapping;
 
 /**

@@ -10,6 +10,10 @@ import * as Haptics from "expo-haptics";
 import { Platform } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { extractPhotoTimestamp, extractTimestampFromPickerResult } from "@/lib/exif-service";
+import {
+  sendCompletionNotification,
+  cancelInspectionNotifications,
+} from "@/lib/notification-service";
 
 const conditionOptions: { value: ConditionRating; label: string; description: string; color: string }[] = [
   { value: "pass", label: "Pass", description: "No issues, everything is fine", color: "#2D5C3F" },

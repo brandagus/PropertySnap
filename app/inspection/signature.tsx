@@ -7,6 +7,10 @@ import { useColors } from "@/hooks/use-colors";
 import { useApp } from "@/lib/app-context";
 import * as Haptics from "expo-haptics";
 import SignatureScreen, { SignatureViewRef } from "react-native-signature-canvas";
+import {
+  sendCompletionNotification,
+  cancelInspectionNotifications,
+} from "@/lib/notification-service";
 
 const { width } = Dimensions.get("window");
 
@@ -82,7 +86,7 @@ export default function SignatureScreenComponent() {
     }
 
     // Update inspection with signature
-    setTimeout(() => {
+    setTimeout(async () => {
       const updatedInspection = {
         ...inspection,
         status: "completed" as const,
@@ -91,6 +95,18 @@ export default function SignatureScreenComponent() {
       };
 
       dispatch({ type: "UPDATE_INSPECTION", payload: updatedInspection });
+      
+      // Cancel any scheduled reminders for this inspection
+      await cancelInspectionNotifications(inspection.id);
+      
+      // Send completion notification
+      if (property) {
+        await sendCompletionNotification(
+          inspection.id,
+          property.address,
+          "landlord"
+        );
+      }
       
       setIsLoading(false);
       setIsComplete(true);

@@ -268,3 +268,16 @@
 - [x] Cross-reference GPS with property address for location verification
 - [x] Flag photos taken far from property location
 
+
+## Push Notifications Feature
+- [x] Set up expo-notifications with proper permissions
+- [x] Create notification service for scheduling local notifications
+- [x] Add notification types: inspection_reminder, inspection_due, inspection_completed
+- [x] Schedule automatic reminders before inspection deadlines
+- [x] Notify landlords when tenants complete their inspection portion
+- [x] Add notification preferences screen in account settings
+- [x] Allow users to enable/disable different notification types
+- [x] Set custom reminder timing (1 day before, 3 days before, etc.)
+- [ ] Show notification history/log in app
+- [ ] Handle notification tap to navigate to relevant inspection
+

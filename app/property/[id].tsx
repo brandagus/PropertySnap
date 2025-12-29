@@ -8,6 +8,10 @@ import { useApp, generateId, createDefaultCheckpoints, getDefaultRooms } from "@
 import * as Haptics from "expo-haptics";
 import { Platform } from "react-native";
 import * as ImagePicker from "expo-image-picker";
+import {
+  scheduleInspectionReminder,
+  scheduleDueDateAlert,
+} from "@/lib/notification-service";
 
 export default function PropertyDetailScreen() {
   const router = useRouter();
@@ -52,6 +56,29 @@ export default function PropertyDetailScreen() {
     };
 
     dispatch({ type: "ADD_INSPECTION", payload: { propertyId: property.id, inspection: newInspection } });
+    
+    // Schedule notification reminders for the inspection (7 days from now as default due date)
+    const dueDate = new Date();
+    dueDate.setDate(dueDate.getDate() + 7);
+    
+    const typeLabel = type === "move-in" ? "Move-In" : type === "move-out" ? "Move-Out" : "Routine";
+    
+    // Schedule reminder notification
+    scheduleInspectionReminder(
+      newInspection.id,
+      property.address,
+      typeLabel,
+      dueDate
+    );
+    
+    // Schedule due date alert
+    scheduleDueDateAlert(
+      newInspection.id,
+      property.address,
+      typeLabel,
+      dueDate
+    );
+    
     router.push(`/inspection/${newInspection.id}`);
   };
 

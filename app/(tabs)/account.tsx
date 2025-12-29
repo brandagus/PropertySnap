@@ -57,7 +57,7 @@ export default function AccountScreen() {
       icon: "bell.fill",
       title: "Notifications",
       subtitle: "Manage push notifications",
-      onPress: () => {},
+      onPress: () => router.push("/notification-settings" as any),
       showChevron: true,
     },
     {
