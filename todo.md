@@ -147,3 +147,17 @@
 - [x] Remove "Not Inspected" from individual photo checkpoints without assessment (leave blank)
 - [x] Only show "Not Inspected" at room level when room has no photo AND no assessment
 - [x] Update PDF service to follow same logic
+
+## PDF Complete Redesign - Luxury/Legal Aesthetic
+- [x] Fix color palette usage: Burgundy 30%, Gold 10%, Navy 40%, Cream 20%
+- [x] Add property photo centered on cover page with gold/burgundy frame
+- [x] Create strong visual hierarchy with PS logo prominent in burgundy
+- [x] Large serif "Property Inspection Report" title in burgundy/navy
+- [x] Emphasize property address larger than other details
+- [x] Add burgundy header bar/border on cover
+- [x] Add gold divider lines between sections
+- [x] Increase margins throughout entire document
+- [x] Use serif font (Crimson Pro) consistently
+- [x] Burgundy section headers throughout
+- [x] Gold accent lines between rooms
+- [x] Professional spacing and layout
