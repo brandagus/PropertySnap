@@ -111,3 +111,29 @@
 - [x] Add export options (share, save, email)
 - [x] Integrate PDF generation button in inspection detail screen
 - [x] Add loading state during PDF generation
+
+## PDF Export Fixes
+- [x] Increase PDF margins for professional spacious layout
+- [x] Match PDF font to app interface (Crimson Pro serif for headings)
+- [x] Fix photo rendering in PDF (blue question mark issue)
+- [x] Show "No photo provided" for empty photo sections
+- [x] Show "No information provided" for empty notes
+- [x] Keep rooms in PDF even if empty (only remove if user deleted room)
+
+## App Functionality Changes
+- [x] Add "Delete Room" button within each room during inspection
+- [x] Replace condition ratings: Pass / Pass - Needs Attention / Fail - Action Required
+- [x] Collapse all rooms by default during inspection
+- [x] Allow editing room name when expanded
+- [x] Clean checklist feel - expand one room at a time
+
+## Enterprise Team Management
+- [x] Create Team data model with roles (Admin, Manager, Inspector, Viewer)
+- [x] Add team member invitation system via email
+- [x] Property access control: "All Properties" or "Specific Properties" selection
+- [x] Team management screen for admins
+- [x] Team member list with role badges
+- [x] Edit team member permissions
+- [x] Remove team member functionality
+- [x] Filter properties based on user access permissions
+- [ ] Agency/company profile settings

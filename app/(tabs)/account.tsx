@@ -2,22 +2,26 @@ import { View, Text, Pressable, StyleSheet, ScrollView, Alert } from "react-nati
 import { useRouter } from "expo-router";
 import { ScreenContainer } from "@/components/screen-container";
 import { IconSymbol } from "@/components/ui/icon-symbol";
-import { useApp } from "@/lib/app-context";
+import { useApp, canManageTeam } from "@/lib/app-context";
 import { fonts, design } from "@/constants/typography";
 import * as Haptics from "expo-haptics";
 import { Platform } from "react-native";
 
 interface MenuItem {
-  icon: "person.circle.fill" | "bell.fill" | "creditcard.fill" | "doc.text.fill" | "questionmark.circle.fill" | "info.circle.fill";
+  icon: "person.circle.fill" | "bell.fill" | "creditcard.fill" | "doc.text.fill" | "questionmark.circle.fill" | "info.circle.fill" | "person.3.fill" | "building.2.fill";
   title: string;
   subtitle?: string;
   onPress: () => void;
   showChevron?: boolean;
+  badge?: string;
 }
 
 export default function AccountScreen() {
   const router = useRouter();
   const { state, dispatch } = useApp();
+
+  const isAdmin = canManageTeam(state.user?.teamRole);
+  const hasTeam = !!state.team;
 
   const handleLogout = () => {
     if (Platform.OS !== "web") {
@@ -59,11 +63,34 @@ export default function AccountScreen() {
     {
       icon: "creditcard.fill",
       title: "Subscription",
-      subtitle: state.user?.subscriptionTier === "free" ? "Free Plan" : "Pro Plan",
+      subtitle: state.user?.subscriptionTier === "enterprise" 
+        ? "Enterprise Plan" 
+        : state.user?.subscriptionTier === "free" 
+          ? "Free Plan" 
+          : "Pro Plan",
       onPress: () => {},
       showChevron: true,
     },
   ];
+
+  // Team management menu items (only for landlords/managers)
+  const teamMenuItems: MenuItem[] = [
+    {
+      icon: "person.3.fill",
+      title: "Team Management",
+      subtitle: hasTeam 
+        ? `${state.team?.members.length || 0} team members` 
+        : "Set up your team",
+      onPress: () => router.push("/team"),
+      showChevron: true,
+      badge: hasTeam && state.team?.members.some(m => m.status === "pending") 
+        ? "NEW" 
+        : undefined,
+    },
+  ];
+
+  // Only show team menu for landlords and managers
+  const showTeamMenu = state.user?.userType === "landlord" || state.user?.userType === "manager";
 
   const supportMenuItems: MenuItem[] = [
     {
@@ -112,7 +139,14 @@ export default function AccountScreen() {
         <IconSymbol name={item.icon} size={20} color="#8B2635" />
       </View>
       <View style={styles.menuContent}>
-        <Text style={styles.menuTitle}>{item.title}</Text>
+        <View style={styles.menuTitleRow}>
+          <Text style={styles.menuTitle}>{item.title}</Text>
+          {item.badge && (
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>{item.badge}</Text>
+            </View>
+          )}
+        </View>
         {item.subtitle && (
           <Text style={styles.menuSubtitle}>{item.subtitle}</Text>
         )}
@@ -145,18 +179,25 @@ export default function AccountScreen() {
           <View style={styles.userCard}>
             <View style={styles.avatarContainer}>
               <Text style={styles.avatarText}>
-                {state.user?.email?.charAt(0).toUpperCase() ?? "?"}
+                {(state.user?.name?.[0]?.toUpperCase()) || (state.user?.email?.charAt(0).toUpperCase()) || "?"}
               </Text>
             </View>
             <View style={styles.userInfo}>
               <Text style={styles.userName}>
-                {state.user?.email ?? "Guest"}
+                {state.user?.name || state.user?.email || "Guest"}
               </Text>
               <Text style={styles.userRole}>
                 {state.user?.userType === "landlord" ? "Landlord" : 
                  state.user?.userType === "tenant" ? "Tenant" : 
                  state.user?.userType === "manager" ? "Property Manager" : "Guest"}
+                {state.user?.teamRole === "admin" && " • Team Admin"}
               </Text>
+              {hasTeam && (
+                <View style={styles.teamBadge}>
+                  <IconSymbol name="building.2.fill" size={12} color="#C59849" />
+                  <Text style={styles.teamBadgeText}>{state.team?.name}</Text>
+                </View>
+              )}
             </View>
           </View>
         </View>
@@ -164,6 +205,7 @@ export default function AccountScreen() {
         {/* Menu Sections */}
         <View style={styles.menuContainer}>
           {renderSection("ACCOUNT", accountMenuItems)}
+          {showTeamMenu && renderSection("ENTERPRISE", teamMenuItems)}
           {renderSection("SUPPORT", supportMenuItems)}
         </View>
 
@@ -238,6 +280,22 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#6B6B6B",
   },
+  teamBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    backgroundColor: "#FDF8F0",
+    borderRadius: 4,
+    alignSelf: "flex-start",
+  },
+  teamBadgeText: {
+    fontFamily: fonts.bodyMedium,
+    fontSize: 12,
+    color: "#C59849",
+    marginLeft: 4,
+  },
   menuContainer: {
     paddingHorizontal: 24,
   },
@@ -280,6 +338,10 @@ const styles = StyleSheet.create({
   menuContent: {
     flex: 1,
   },
+  menuTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
   menuTitle: {
     fontFamily: fonts.bodyMedium,
     fontSize: 15,
@@ -290,6 +352,18 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: "#6B6B6B",
     marginTop: 2,
+  },
+  badge: {
+    marginLeft: 8,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    backgroundColor: "#8B2635",
+    borderRadius: 4,
+  },
+  badgeText: {
+    fontFamily: fonts.bodyMedium,
+    fontSize: 10,
+    color: "#FFFFFF",
   },
   logoutContainer: {
     paddingHorizontal: 24,

@@ -10,12 +10,10 @@ import * as Haptics from "expo-haptics";
 import { Platform } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 
-const conditionOptions: { value: ConditionRating; label: string; color: string }[] = [
-  { value: "excellent", label: "Excellent", color: "#2D5C3F" },
-  { value: "good", label: "Good", color: "#4A7C59" },
-  { value: "fair", label: "Fair", color: "#D97706" },
-  { value: "poor", label: "Poor", color: "#C2410C" },
-  { value: "damaged", label: "Damaged", color: "#991B1B" },
+const conditionOptions: { value: ConditionRating; label: string; description: string; color: string }[] = [
+  { value: "pass", label: "Pass", description: "No issues, everything is fine", color: "#2D5C3F" },
+  { value: "pass-attention", label: "Pass - Needs Attention", description: "Minor issues, not urgent", color: "#D97706" },
+  { value: "fail", label: "Fail - Action Required", description: "Urgent repair needed", color: "#991B1B" },
 ];
 
 export default function InspectionDetailScreen() {
@@ -23,10 +21,12 @@ export default function InspectionDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const colors = useColors();
   const { state, dispatch } = useApp();
+  // Start with NO room expanded (collapsed by default)
   const [expandedRoom, setExpandedRoom] = useState<string | null>(null);
   const [showConditionPicker, setShowConditionPicker] = useState<string | null>(null);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [showExportMenu, setShowExportMenu] = useState(false);
+  const [editingRoomName, setEditingRoomName] = useState<string | null>(null);
 
   // Find the inspection and its property
   const { inspection, property } = useMemo(() => {
@@ -62,6 +62,7 @@ export default function InspectionDetailScreen() {
   const completedCount = inspection.checkpoints.filter(cp => cp.landlordPhoto).length;
   const totalCount = inspection.checkpoints.length;
   const progress = totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
+  const roomNames = Object.keys(checkpointsByRoom);
 
   const handleTakePhoto = async (checkpoint: Checkpoint) => {
     const permission = await ImagePicker.requestCameraPermissionsAsync();
@@ -163,6 +164,55 @@ export default function InspectionDetailScreen() {
     dispatch({ type: "UPDATE_INSPECTION", payload: updatedInspection });
   };
 
+  // Delete entire room (all checkpoints in that room)
+  const handleDeleteRoom = (roomName: string) => {
+    Alert.alert(
+      "Delete Room",
+      `Are you sure you want to delete "${roomName}" and all its checkpoints? This cannot be undone.`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: () => {
+            const updatedCheckpoints = inspection.checkpoints.filter(
+              cp => cp.roomName !== roomName
+            );
+            const updatedInspection = {
+              ...inspection,
+              checkpoints: updatedCheckpoints,
+            };
+            dispatch({ type: "UPDATE_INSPECTION", payload: updatedInspection });
+            setExpandedRoom(null);
+            
+            if (Platform.OS !== "web") {
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  // Rename room (update all checkpoints with that room name)
+  const handleRenameRoom = (oldName: string, newName: string) => {
+    if (!newName.trim() || newName === oldName) {
+      setEditingRoomName(null);
+      return;
+    }
+
+    const updatedCheckpoints = inspection.checkpoints.map(cp =>
+      cp.roomName === oldName ? { ...cp, roomName: newName.trim() } : cp
+    );
+    const updatedInspection = {
+      ...inspection,
+      checkpoints: updatedCheckpoints,
+    };
+    dispatch({ type: "UPDATE_INSPECTION", payload: updatedInspection });
+    setEditingRoomName(null);
+    setExpandedRoom(newName.trim());
+  };
+
   const handleCompleteInspection = () => {
     if (Platform.OS !== "web") {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -228,7 +278,7 @@ export default function InspectionDetailScreen() {
     <View 
       key={checkpoint.id}
       className="mb-4 p-4 rounded-xl"
-      style={{ backgroundColor: colors.surface }}
+      style={{ backgroundColor: colors.background, borderWidth: 1, borderColor: colors.border }}
     >
       {/* Checkpoint Title */}
       <TextInput
@@ -295,21 +345,21 @@ export default function InspectionDetailScreen() {
             ]}
           >
             <IconSymbol name="photo.fill" size={18} color={colors.primary} />
-            <Text className="text-primary text-sm font-medium ml-2">Gallery</Text>
+            <Text className="text-sm font-medium ml-2" style={{ color: colors.primary }}>Gallery</Text>
           </Pressable>
         </View>
       )}
 
       {/* Condition Picker */}
       <View className="mb-3">
-        <Text className="text-sm text-muted mb-2">Condition</Text>
+        <Text className="text-sm text-muted mb-2">Condition Assessment</Text>
         <Pressable
           onPress={() => setShowConditionPicker(
             showConditionPicker === checkpoint.id ? null : checkpoint.id
           )}
           style={[
             styles.conditionButton,
-            { backgroundColor: colors.background, borderColor: colors.border },
+            { backgroundColor: colors.surface, borderColor: colors.border },
           ]}
         >
           {checkpoint.landlordCondition ? (
@@ -317,11 +367,11 @@ export default function InspectionDetailScreen() {
               <View 
                 style={[
                   styles.conditionDot, 
-                  { backgroundColor: conditionOptions.find(c => c.value === checkpoint.landlordCondition)?.color }
+                  { backgroundColor: conditionOptions.find(c => c.value === checkpoint.landlordCondition)?.color || colors.muted }
                 ]} 
               />
               <Text className="text-foreground ml-2">
-                {conditionOptions.find(c => c.value === checkpoint.landlordCondition)?.label}
+                {conditionOptions.find(c => c.value === checkpoint.landlordCondition)?.label || "Unknown"}
               </Text>
             </View>
           ) : (
@@ -345,7 +395,10 @@ export default function InspectionDetailScreen() {
                 ]}
               >
                 <View style={[styles.conditionDot, { backgroundColor: option.color }]} />
-                <Text className="text-foreground ml-2">{option.label}</Text>
+                <View className="ml-3 flex-1">
+                  <Text className="text-foreground font-medium">{option.label}</Text>
+                  <Text className="text-muted text-xs">{option.description}</Text>
+                </View>
               </Pressable>
             ))}
           </View>
@@ -364,7 +417,7 @@ export default function InspectionDetailScreen() {
           numberOfLines={2}
           style={[
             styles.notesInput,
-            { backgroundColor: colors.background, borderColor: colors.border, color: colors.foreground },
+            { backgroundColor: colors.surface, borderColor: colors.border, color: colors.foreground },
           ]}
         />
       </View>
@@ -477,53 +530,151 @@ export default function InspectionDetailScreen() {
         </View>
       </View>
 
+      {/* Room List - Collapsed by default */}
       <ScrollView showsVerticalScrollIndicator={false} className="flex-1">
         <View className="px-6 pb-32">
-          {Object.entries(checkpointsByRoom).map(([roomName, checkpoints]) => (
-            <View key={roomName} className="mb-6">
-              {/* Room Header */}
-              <Pressable
-                onPress={() => setExpandedRoom(expandedRoom === roomName ? null : roomName)}
-                style={({ pressed }) => [
-                  styles.roomHeader,
-                  { backgroundColor: colors.surface },
-                  pressed && { opacity: 0.8 },
-                ]}
-              >
-                <Text className="text-base font-semibold text-foreground">{roomName}</Text>
-                <View className="flex-row items-center">
-                  <Text className="text-sm text-muted mr-2">
-                    {checkpoints.filter(cp => cp.landlordPhoto).length}/{checkpoints.length}
-                  </Text>
-                  <IconSymbol 
-                    name={expandedRoom === roomName ? "chevron.right" : "chevron.right"} 
-                    size={18} 
-                    color={colors.muted} 
-                  />
-                </View>
-              </Pressable>
+          {roomNames.map((roomName) => {
+            const checkpoints = checkpointsByRoom[roomName];
+            const isExpanded = expandedRoom === roomName;
+            const roomCompleted = checkpoints.filter(cp => cp.landlordPhoto).length;
+            
+            return (
+              <View key={roomName} className="mb-3">
+                {/* Room Header - Collapsed State */}
+                <Pressable
+                  onPress={() => setExpandedRoom(isExpanded ? null : roomName)}
+                  style={({ pressed }) => [
+                    styles.roomHeader,
+                    { 
+                      backgroundColor: isExpanded ? colors.primary : colors.surface,
+                      borderWidth: 1,
+                      borderColor: isExpanded ? colors.primary : colors.border,
+                    },
+                    pressed && { opacity: 0.8 },
+                  ]}
+                >
+                  <View className="flex-row items-center flex-1">
+                    <IconSymbol 
+                      name={isExpanded ? "chevron.right" : "chevron.right"} 
+                      size={18} 
+                      color={isExpanded ? "#FFFFFF" : colors.muted}
+                      style={{ transform: [{ rotate: isExpanded ? '90deg' : '0deg' }] }}
+                    />
+                    {editingRoomName === roomName ? (
+                      <TextInput
+                        autoFocus
+                        defaultValue={roomName}
+                        onEndEditing={(e) => handleRenameRoom(roomName, e.nativeEvent.text)}
+                        onSubmitEditing={(e) => handleRenameRoom(roomName, e.nativeEvent.text)}
+                        style={[
+                          styles.roomNameInput,
+                          { color: isExpanded ? "#FFFFFF" : colors.foreground },
+                        ]}
+                        returnKeyType="done"
+                      />
+                    ) : (
+                      <Text 
+                        className="text-base font-semibold ml-3"
+                        style={{ color: isExpanded ? "#FFFFFF" : colors.foreground }}
+                      >
+                        {roomName}
+                      </Text>
+                    )}
+                  </View>
+                  <View className="flex-row items-center">
+                    {/* Progress badge */}
+                    <View 
+                      style={[
+                        styles.progressBadge,
+                        { 
+                          backgroundColor: isExpanded ? "rgba(255,255,255,0.2)" : colors.background,
+                          borderColor: isExpanded ? "transparent" : colors.border,
+                        }
+                      ]}
+                    >
+                      <Text 
+                        className="text-xs font-medium"
+                        style={{ color: isExpanded ? "#FFFFFF" : colors.muted }}
+                      >
+                        {roomCompleted}/{checkpoints.length}
+                      </Text>
+                    </View>
+                  </View>
+                </Pressable>
 
-              {/* Checkpoints */}
-              {(expandedRoom === roomName || expandedRoom === null) && (
-                <View className="mt-3">
-                  {checkpoints.map(renderCheckpoint)}
-                  
-                  {/* Add Checkpoint Button */}
-                  <Pressable
-                    onPress={() => handleAddCheckpoint(roomName)}
-                    style={({ pressed }) => [
-                      styles.addCheckpointButton,
-                      { borderColor: colors.border },
-                      pressed && { opacity: 0.7 },
-                    ]}
+                {/* Expanded Room Content */}
+                {isExpanded && (
+                  <View 
+                    className="mt-2 p-4 rounded-xl"
+                    style={{ backgroundColor: colors.surface }}
                   >
-                    <IconSymbol name="plus" size={18} color={colors.primary} />
-                    <Text className="text-primary text-sm font-medium ml-2">Add Checkpoint</Text>
-                  </Pressable>
-                </View>
-              )}
-            </View>
-          ))}
+                    {/* Room Actions */}
+                    <View className="flex-row gap-2 mb-4">
+                      <Pressable
+                        onPress={() => setEditingRoomName(roomName)}
+                        style={({ pressed }) => [
+                          styles.roomActionButton,
+                          { borderColor: colors.border },
+                          pressed && { opacity: 0.7 },
+                        ]}
+                      >
+                        <IconSymbol name="pencil" size={16} color={colors.primary} />
+                        <Text className="text-sm ml-2" style={{ color: colors.primary }}>Rename</Text>
+                      </Pressable>
+                      <Pressable
+                        onPress={() => handleDeleteRoom(roomName)}
+                        style={({ pressed }) => [
+                          styles.roomActionButton,
+                          { borderColor: colors.error },
+                          pressed && { opacity: 0.7 },
+                        ]}
+                      >
+                        <IconSymbol name="trash.fill" size={16} color={colors.error} />
+                        <Text className="text-sm ml-2" style={{ color: colors.error }}>Delete Room</Text>
+                      </Pressable>
+                    </View>
+
+                    {/* Checkpoints */}
+                    {checkpoints.map(renderCheckpoint)}
+                    
+                    {/* Add Checkpoint Button */}
+                    <Pressable
+                      onPress={() => handleAddCheckpoint(roomName)}
+                      style={({ pressed }) => [
+                        styles.addCheckpointButton,
+                        { borderColor: colors.border },
+                        pressed && { opacity: 0.7 },
+                      ]}
+                    >
+                      <IconSymbol name="plus" size={18} color={colors.primary} />
+                      <Text className="text-sm font-medium ml-2" style={{ color: colors.primary }}>
+                        Add Checkpoint
+                      </Text>
+                    </Pressable>
+                  </View>
+                )}
+              </View>
+            );
+          })}
+
+          {/* Add New Room */}
+          <Pressable
+            onPress={() => {
+              const newRoomName = `Room ${roomNames.length + 1}`;
+              handleAddCheckpoint(newRoomName);
+              setExpandedRoom(newRoomName);
+            }}
+            style={({ pressed }) => [
+              styles.addRoomButton,
+              { borderColor: colors.primary },
+              pressed && { opacity: 0.7 },
+            ]}
+          >
+            <IconSymbol name="plus" size={20} color={colors.primary} />
+            <Text className="text-base font-medium ml-2" style={{ color: colors.primary }}>
+              Add New Room
+            </Text>
+          </Pressable>
         </View>
       </ScrollView>
 
@@ -592,6 +743,27 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 12,
   },
+  roomNameInput: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: "600",
+    marginLeft: 12,
+    padding: 0,
+  },
+  progressBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  roomActionButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
   checkpointPhoto: {
     width: "100%",
     height: 180,
@@ -625,7 +797,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   conditionButton: {
-    height: 44,
+    height: 48,
     borderRadius: 8,
     borderWidth: 1,
     paddingHorizontal: 12,
@@ -641,7 +813,7 @@ const styles = StyleSheet.create({
   conditionOption: {
     flexDirection: "row",
     alignItems: "center",
-    padding: 12,
+    padding: 14,
     borderBottomWidth: 1,
     borderBottomColor: "#E8E6E3",
   },
@@ -657,10 +829,20 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    padding: 12,
+    padding: 14,
     borderRadius: 8,
     borderWidth: 1,
     borderStyle: "dashed",
+  },
+  addRoomButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderStyle: "dashed",
+    marginTop: 8,
   },
   completeButton: {
     height: 52,

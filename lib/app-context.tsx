@@ -3,10 +3,37 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 // Types
 export type UserType = "landlord" | "tenant" | "manager" | null;
-export type ConditionRating = "excellent" | "good" | "fair" | "poor" | "damaged";
+// New objective condition ratings - actionable and clear
+export type ConditionRating = "pass" | "pass-attention" | "fail";
+// Legacy support for existing data
+export type LegacyConditionRating = "excellent" | "good" | "fair" | "poor" | "damaged";
 export type PropertyType = "apartment" | "house" | "townhouse" | "studio";
 export type InspectionStatus = "pending" | "completed" | "archived";
 export type InspectionType = "move-in" | "move-out";
+
+// Team Management Types
+export type TeamRole = "admin" | "manager" | "inspector" | "viewer";
+export type PropertyAccessType = "all" | "specific";
+
+export interface TeamMember {
+  id: string;
+  email: string;
+  name: string;
+  role: TeamRole;
+  propertyAccess: PropertyAccessType;
+  assignedPropertyIds: string[]; // Only used when propertyAccess is "specific"
+  invitedAt: string;
+  acceptedAt: string | null;
+  status: "pending" | "active" | "disabled";
+}
+
+export interface Team {
+  id: string;
+  name: string; // Company/Agency name
+  ownerId: string; // The admin who created the team
+  members: TeamMember[];
+  createdAt: string;
+}
 
 export interface Checkpoint {
   id: string;
@@ -36,6 +63,9 @@ export interface Inspection {
   tenantName: string | null;
   tenantSignedAt: string | null;
   checkpoints: Checkpoint[];
+  // Track who performed the inspection
+  inspectorId?: string;
+  inspectorName?: string;
 }
 
 export interface Property {
@@ -50,14 +80,20 @@ export interface Property {
   tenantEmail: string | null;
   inspections: Inspection[];
   createdAt: string;
+  // Team assignment
+  assignedTo?: string[]; // Team member IDs who can access this property
 }
 
 export interface User {
   id: string;
   email: string;
+  name?: string;
   userType: UserType;
-  subscriptionTier: "free" | "per-inspection" | "unlimited" | "manager";
+  subscriptionTier: "free" | "per-inspection" | "unlimited" | "enterprise";
   inspectionsUsed: number;
+  // Team membership
+  teamId?: string;
+  teamRole?: TeamRole;
 }
 
 interface AppState {
@@ -67,6 +103,8 @@ interface AppState {
   properties: Property[];
   activeInspection: Inspection | null;
   isLoading: boolean;
+  // Team state
+  team: Team | null;
 }
 
 type AppAction =
@@ -84,6 +122,12 @@ type AppAction =
   | { type: "UPDATE_INSPECTION"; payload: Inspection }
   | { type: "SET_ACTIVE_INSPECTION"; payload: Inspection | null }
   | { type: "UPDATE_CHECKPOINT"; payload: { inspectionId: string; checkpoint: Checkpoint } }
+  // Team actions
+  | { type: "SET_TEAM"; payload: Team | null }
+  | { type: "CREATE_TEAM"; payload: { name: string } }
+  | { type: "ADD_TEAM_MEMBER"; payload: TeamMember }
+  | { type: "UPDATE_TEAM_MEMBER"; payload: TeamMember }
+  | { type: "REMOVE_TEAM_MEMBER"; payload: string }
   | { type: "HYDRATE"; payload: Partial<AppState> };
 
 const initialState: AppState = {
@@ -93,6 +137,7 @@ const initialState: AppState = {
   properties: [],
   activeInspection: null,
   isLoading: true,
+  team: null,
 };
 
 function appReducer(state: AppState, action: AppAction): AppState {
@@ -109,7 +154,7 @@ function appReducer(state: AppState, action: AppAction): AppState {
     case "LOGIN":
       return { ...state, user: action.payload, isAuthenticated: true };
     case "LOGOUT":
-      return { ...state, user: null, isAuthenticated: false, properties: [], activeInspection: null };
+      return { ...state, user: null, isAuthenticated: false, properties: [], activeInspection: null, team: null };
     case "ADD_PROPERTY":
       return { ...state, properties: [...state.properties, action.payload] };
     case "UPDATE_PROPERTY":
@@ -168,6 +213,57 @@ function appReducer(state: AppState, action: AppAction): AppState {
           ),
         })),
       };
+    // Team management reducers
+    case "SET_TEAM":
+      return { ...state, team: action.payload };
+    case "CREATE_TEAM":
+      if (!state.user) return state;
+      const newTeam: Team = {
+        id: generateId(),
+        name: action.payload.name,
+        ownerId: state.user.id,
+        members: [],
+        createdAt: new Date().toISOString(),
+      };
+      return {
+        ...state,
+        team: newTeam,
+        user: {
+          ...state.user,
+          teamId: newTeam.id,
+          teamRole: "admin",
+          subscriptionTier: "enterprise",
+        },
+      };
+    case "ADD_TEAM_MEMBER":
+      if (!state.team) return state;
+      return {
+        ...state,
+        team: {
+          ...state.team,
+          members: [...state.team.members, action.payload],
+        },
+      };
+    case "UPDATE_TEAM_MEMBER":
+      if (!state.team) return state;
+      return {
+        ...state,
+        team: {
+          ...state.team,
+          members: state.team.members.map((m) =>
+            m.id === action.payload.id ? action.payload : m
+          ),
+        },
+      };
+    case "REMOVE_TEAM_MEMBER":
+      if (!state.team) return state;
+      return {
+        ...state,
+        team: {
+          ...state.team,
+          members: state.team.members.filter((m) => m.id !== action.payload),
+        },
+      };
     case "HYDRATE":
       return { ...state, ...action.payload, isLoading: false };
     default:
@@ -217,6 +313,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           isAuthenticated: state.isAuthenticated,
           user: state.user,
           properties: state.properties,
+          team: state.team,
         };
         await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
       } catch (error) {
@@ -226,7 +323,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
     const timeout = setTimeout(saveState, 500);
     return () => clearTimeout(timeout);
-  }, [state.isOnboarded, state.isAuthenticated, state.user, state.properties, state.isLoading]);
+  }, [state.isOnboarded, state.isAuthenticated, state.user, state.properties, state.team, state.isLoading]);
 
   return (
     <AppContext.Provider value={{ state, dispatch }}>
@@ -274,4 +371,77 @@ export function createDefaultCheckpoints(rooms: string[]): Checkpoint[] {
     notes: "",
     timestamp: null,
   }));
+}
+
+// Team helper functions
+export function getRoleLabel(role: TeamRole): string {
+  switch (role) {
+    case "admin":
+      return "Administrator";
+    case "manager":
+      return "Property Manager";
+    case "inspector":
+      return "Inspector";
+    case "viewer":
+      return "View Only";
+    default:
+      return role;
+  }
+}
+
+export function getRoleDescription(role: TeamRole): string {
+  switch (role) {
+    case "admin":
+      return "Full access to all properties, team management, and billing";
+    case "manager":
+      return "Can manage assigned properties and conduct inspections";
+    case "inspector":
+      return "Can conduct inspections on assigned properties only";
+    case "viewer":
+      return "Can view inspection reports and archives only";
+    default:
+      return "";
+  }
+}
+
+export function canManageTeam(role: TeamRole | undefined): boolean {
+  return role === "admin";
+}
+
+export function canManageProperties(role: TeamRole | undefined): boolean {
+  return role === "admin" || role === "manager";
+}
+
+export function canConductInspections(role: TeamRole | undefined): boolean {
+  return role === "admin" || role === "manager" || role === "inspector";
+}
+
+export function canViewReports(role: TeamRole | undefined): boolean {
+  return true; // All roles can view reports
+}
+
+// Filter properties based on user's access
+export function getAccessibleProperties(
+  properties: Property[],
+  user: User | null,
+  team: Team | null
+): Property[] {
+  if (!user) return [];
+  
+  // If no team or user is admin, return all properties
+  if (!team || user.teamRole === "admin") {
+    return properties;
+  }
+  
+  // Find the team member
+  const member = team.members.find((m) => m.id === user.id);
+  if (!member) return [];
+  
+  // If member has access to all properties
+  if (member.propertyAccess === "all") {
+    return properties;
+  }
+  
+  // Filter to only assigned properties
+  return properties.filter((p) => member.assignedPropertyIds.includes(p.id));
 }

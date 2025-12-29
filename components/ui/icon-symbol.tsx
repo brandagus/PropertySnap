@@ -45,6 +45,14 @@ const MAPPING = {
   "key.fill": "vpn-key",
   "briefcase.fill": "work",
   
+  // Team Management
+  "person.3.fill": "groups",
+  "person.badge.plus": "person-add",
+  "calendar": "event",
+  "checkmark": "check",
+  "doc.fill": "description",
+  "printer.fill": "print",
+  
   // Settings
   "gearshape.fill": "settings",
   "questionmark.circle.fill": "help",
