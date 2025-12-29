@@ -35,80 +35,137 @@ export default function ManageTenantsScreen() {
     
     const tenantName = property.tenantName || "Tenant";
     
+    // First, show inspection type selection
     Alert.alert(
-      "Request Inspection",
-      `Create a new inspection and send request to ${tenantName} for ${property.address}?`,
+      "Select Inspection Type",
+      `What type of inspection would you like to request for ${property.address}?`,
       [
         { text: "Cancel", style: "cancel" },
-        { 
-          text: "Send Request", 
-          onPress: async () => {
-            // 1. Create new pending inspection
-            const newInspection = {
-              id: generateId(),
-              propertyId: property.id,
-              type: "routine" as const,
-              status: "pending" as const,
-              createdAt: new Date().toISOString(),
-              completedAt: null,
-              landlordSignature: null,
-              landlordName: null,
-              landlordSignedAt: null,
-              tenantSignature: null,
-              tenantName: null,
-              tenantSignedAt: null,
-              checkpoints: createDefaultCheckpoints(getDefaultRooms()),
-            };
-            
-            dispatch({ type: "ADD_INSPECTION", payload: { propertyId: property.id, inspection: newInspection } });
-            
-            // 2. Schedule notification reminders (7 days from now)
-            const dueDate = new Date();
-            dueDate.setDate(dueDate.getDate() + 7);
-            
-            scheduleInspectionReminder(
-              newInspection.id,
-              property.address,
-              "Routine",
-              dueDate
-            );
-            
-            scheduleDueDateAlert(
-              newInspection.id,
-              property.address,
-              "Routine",
-              dueDate
-            );
-            
-            // 3. Send push notification to tenant
-            await sendTenantActionRequired(
-              newInspection.id,
-              property.address,
-              `Your landlord has requested you to complete a property inspection for ${property.address}.`
-            );
-            
-            if (Platform.OS !== "web") {
-              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-            }
-            
-            // 4. Ask if they want to send SMS
-            Alert.alert(
-              "Inspection Created",
-              `A new inspection has been created and notification sent. Would you also like to send an SMS to ${tenantName}?`,
-              [
-                { text: "No, I'm Done", style: "cancel" },
-                {
-                  text: "Send SMS",
-                  onPress: () => openSMSApp(property),
-                },
-              ]
-            );
-          }
+        {
+          text: "Move-In",
+          onPress: () => createInspectionWithType(property, "move-in", tenantName),
+        },
+        {
+          text: "Move-Out",
+          onPress: () => createInspectionWithType(property, "move-out", tenantName),
+        },
+        {
+          text: "Routine",
+          onPress: () => createInspectionWithType(property, "routine", tenantName),
+        },
+      ]
+    );
+  };
+
+  const createInspectionWithType = async (
+    property: Property,
+    inspectionType: "move-in" | "move-out" | "routine",
+    tenantName: string
+  ) => {
+    // Format type for display
+    const typeDisplay = inspectionType === "move-in" ? "Move-In" 
+      : inspectionType === "move-out" ? "Move-Out" 
+      : "Routine";
+
+    // 1. Create new pending inspection with selected type
+    const newInspection = {
+      id: generateId(),
+      propertyId: property.id,
+      type: inspectionType,
+      status: "pending" as const,
+      createdAt: new Date().toISOString(),
+      completedAt: null,
+      landlordSignature: null,
+      landlordName: null,
+      landlordSignedAt: null,
+      tenantSignature: null,
+      tenantName: null,
+      tenantSignedAt: null,
+      checkpoints: createDefaultCheckpoints(getDefaultRooms()),
+    };
+    
+    dispatch({ type: "ADD_INSPECTION", payload: { propertyId: property.id, inspection: newInspection } });
+    
+    // 2. Schedule notification reminders (7 days from now)
+    const dueDate = new Date();
+    dueDate.setDate(dueDate.getDate() + 7);
+    
+    scheduleInspectionReminder(
+      newInspection.id,
+      property.address,
+      typeDisplay,
+      dueDate
+    );
+    
+    scheduleDueDateAlert(
+      newInspection.id,
+      property.address,
+      typeDisplay,
+      dueDate
+    );
+    
+    // 3. Send push notification to tenant
+    await sendTenantActionRequired(
+      newInspection.id,
+      property.address,
+      `Your landlord has requested a ${typeDisplay} inspection for ${property.address}.`
+    );
+    
+    if (Platform.OS !== "web") {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    }
+    
+    // 4. Ask if they want to send SMS
+    Alert.alert(
+      "Inspection Created",
+      `A ${typeDisplay} inspection has been created and notification sent. Would you also like to send an SMS to ${tenantName}?`,
+      [
+        { text: "No, I'm Done", style: "cancel" },
+        {
+          text: "Send SMS",
+          onPress: () => openSMSAppWithType(property, typeDisplay),
         },
       ]
     );
   };
   
+  const openSMSAppWithType = (property: Property, inspectionType: string) => {
+    const tenantName = property.tenantName || "Tenant";
+    const phone = property.tenantPhone || "";
+    const message = `Hey ${tenantName}, your landlord has requested a ${inspectionType} inspection for ${property.address}. Please open the PropertySnap app to get started.`;
+    
+    if (!phone) {
+      Alert.alert("No Phone Number", "This tenant doesn't have a phone number on file.");
+      return;
+    }
+    
+    // Encode the message for URL
+    const encodedMessage = encodeURIComponent(message);
+    
+    // Use different URL schemes for iOS and Android
+    let smsUrl: string;
+    if (Platform.OS === "ios") {
+      smsUrl = `sms:${phone}&body=${encodedMessage}`;
+    } else if (Platform.OS === "android") {
+      smsUrl = `sms:${phone}?body=${encodedMessage}`;
+    } else {
+      smsUrl = `sms:${phone}?body=${encodedMessage}`;
+    }
+    
+    Linking.canOpenURL(smsUrl)
+      .then((supported) => {
+        if (supported) {
+          return Linking.openURL(smsUrl);
+        } else {
+          Alert.alert("SMS Not Available", "Unable to open the messaging app on this device.");
+        }
+      })
+      .catch((err) => {
+        console.error("Error opening SMS app:", err);
+        Alert.alert("Error", "Failed to open the messaging app.");
+      });
+  };
+
   const openSMSApp = (property: Property) => {
     const tenantName = property.tenantName || "Tenant";
     const phone = property.tenantPhone || "";

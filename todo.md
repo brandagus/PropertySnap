@@ -302,3 +302,9 @@
 - [x] Open native SMS app with pre-written welcome message including property address
 - [x] Open native Email app with pre-written welcome message including property address
 - [x] Include instructions to download PropertySnap app in invitation message
+
+## Inspection Type Selection Feature
+- [x] Add inspection type selection when requesting inspection (Move-In, Move-Out, Routine)
+- [x] Show type selection dialog before creating inspection
+- [x] Pass selected type to inspection creation
+- [x] Update SMS message to include inspection type
