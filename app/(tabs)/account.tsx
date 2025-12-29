@@ -87,6 +87,19 @@ export default function AccountScreen() {
         ? "NEW" 
         : undefined,
     },
+    {
+      icon: "building.2.fill",
+      title: "Agency Settings",
+      subtitle: hasTeam && isAdmin
+        ? "Logo & branding"
+        : "Admin access required",
+      onPress: () => {
+        if (hasTeam && isAdmin) {
+          router.push("/team/settings");
+        }
+      },
+      showChevron: hasTeam && isAdmin,
+    },
   ];
 
   // Only show team menu for landlords and managers

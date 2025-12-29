@@ -5,7 +5,7 @@ import { ScreenContainer } from "@/components/screen-container";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useColors } from "@/hooks/use-colors";
 import { useApp, Checkpoint, ConditionRating, generateId } from "@/lib/app-context";
-import { generateInspectionPDF, printInspectionPDF } from "@/lib/pdf-service";
+import { generateInspectionPDF, printInspectionPDF, PDFBrandingOptions } from "@/lib/pdf-service";
 import * as Haptics from "expo-haptics";
 import { Platform } from "react-native";
 import * as ImagePicker from "expo-image-picker";
@@ -250,7 +250,13 @@ export default function InspectionDetailScreen() {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       }
       
-      const result = await generateInspectionPDF(property, inspection);
+      // Get branding from team settings if available
+      const branding: PDFBrandingOptions | undefined = state.team ? {
+        companyLogo: state.team.companyLogo,
+        companyName: state.team.companyName,
+      } : undefined;
+      
+      const result = await generateInspectionPDF(property, inspection, branding);
       
       if (result.success) {
         if (Platform.OS !== "web") {
@@ -280,7 +286,13 @@ export default function InspectionDetailScreen() {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       }
       
-      const result = await printInspectionPDF(property, inspection);
+      // Get branding from team settings if available
+      const branding: PDFBrandingOptions | undefined = state.team ? {
+        companyLogo: state.team.companyLogo,
+        companyName: state.team.companyName,
+      } : undefined;
+      
+      const result = await printInspectionPDF(property, inspection, branding);
       if (!result.success) {
         throw new Error(result.error || "Failed to print PDF");
       }

@@ -1,8 +1,14 @@
 import * as Print from "expo-print";
 import * as Sharing from "expo-sharing";
 import * as FileSystem from "expo-file-system/legacy";
-import { Property, Inspection, Checkpoint } from "./app-context";
+import { Property, Inspection, Checkpoint, Team } from "./app-context";
 import { generateWatermarkOverlay, getWatermarkStyles } from "./watermark-service";
+
+// Branding options for white-label PDFs
+export interface PDFBrandingOptions {
+  companyLogo?: string | null;
+  companyName?: string | null;
+}
 
 // Color Palette - Luxury/Legal Aesthetic
 const COLORS = {
@@ -107,7 +113,7 @@ async function getBase64Image(uri: string | null): Promise<string | null> {
 }
 
 // Generate the HTML template for the PDF
-async function generatePDFHTML(property: Property, inspection: Inspection): Promise<string> {
+async function generatePDFHTML(property: Property, inspection: Inspection, branding?: PDFBrandingOptions): Promise<string> {
   // Group checkpoints by room
   const checkpointsByRoom = inspection.checkpoints.reduce((acc, checkpoint) => {
     const room = checkpoint.roomName || "General";
@@ -815,10 +821,13 @@ async function generatePDFHTML(property: Property, inspection: Inspection): Prom
         <div class="cover-content">
           <!-- Logo Section -->
           <div class="cover-logo-section">
-            <div class="cover-logo">PS</div>
+            ${branding?.companyLogo 
+              ? `<img src="${await getBase64Image(branding.companyLogo)}" class="cover-logo-image" alt="Company Logo" style="width: 80px; height: 80px; border-radius: 16px; object-fit: contain; background: white;" />`
+              : `<div class="cover-logo">PS</div>`
+            }
             <div class="cover-brand">
-              <div class="cover-brand-name">PropertySnap</div>
-              <div class="cover-brand-tagline">Protect your bond, every time</div>
+              <div class="cover-brand-name">${branding?.companyName || 'PropertySnap'}</div>
+              <div class="cover-brand-tagline">${branding?.companyName ? 'Property Inspection Services' : 'Protect your bond, every time'}</div>
             </div>
           </div>
           
@@ -959,10 +968,13 @@ async function generatePDFHTML(property: Property, inspection: Inspection): Prom
         <!-- Footer -->
         <div class="report-footer">
           <div class="report-footer-left">
-            <div class="footer-logo">PS</div>
+            ${branding?.companyLogo 
+              ? `<img src="${await getBase64Image(branding.companyLogo)}" style="width: 36px; height: 36px; border-radius: 8px; object-fit: contain; background: white;" alt="Logo" />`
+              : `<div class="footer-logo">PS</div>`
+            }
             <div>
-              <div class="footer-brand">PropertySnap</div>
-              <div class="footer-tagline">Protect your bond, every time</div>
+              <div class="footer-brand">${branding?.companyName || 'PropertySnap'}</div>
+              <div class="footer-tagline">${branding?.companyName ? 'Property Inspection Services' : 'Protect your bond, every time'}</div>
             </div>
           </div>
           <div class="report-footer-right">
@@ -979,10 +991,11 @@ async function generatePDFHTML(property: Property, inspection: Inspection): Prom
 // Generate and share PDF
 export async function generateInspectionPDF(
   property: Property,
-  inspection: Inspection
+  inspection: Inspection,
+  branding?: PDFBrandingOptions
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const html = await generatePDFHTML(property, inspection);
+    const html = await generatePDFHTML(property, inspection, branding);
     
     const { uri } = await Print.printToFileAsync({
       html,
@@ -1011,10 +1024,11 @@ export async function generateInspectionPDF(
 // Print PDF directly
 export async function printInspectionPDF(
   property: Property,
-  inspection: Inspection
+  inspection: Inspection,
+  branding?: PDFBrandingOptions
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const html = await generatePDFHTML(property, inspection);
+    const html = await generatePDFHTML(property, inspection, branding);
     await Print.printAsync({ html });
     return { success: true };
   } catch (error) {

@@ -33,6 +33,9 @@ export interface Team {
   ownerId: string; // The admin who created the team
   members: TeamMember[];
   createdAt: string;
+  // White-label branding
+  companyLogo: string | null; // URI to uploaded company logo
+  companyName: string | null; // Display name for PDF reports
 }
 
 export interface PhotoTimestampData {
@@ -139,6 +142,7 @@ type AppAction =
   | { type: "ADD_TEAM_MEMBER"; payload: TeamMember }
   | { type: "UPDATE_TEAM_MEMBER"; payload: TeamMember }
   | { type: "REMOVE_TEAM_MEMBER"; payload: string }
+  | { type: "UPDATE_TEAM_BRANDING"; payload: { companyLogo?: string | null; companyName?: string | null } }
   | { type: "HYDRATE"; payload: Partial<AppState> };
 
 const initialState: AppState = {
@@ -235,6 +239,8 @@ function appReducer(state: AppState, action: AppAction): AppState {
         ownerId: state.user.id,
         members: [],
         createdAt: new Date().toISOString(),
+        companyLogo: null,
+        companyName: null,
       };
       return {
         ...state,
@@ -273,6 +279,16 @@ function appReducer(state: AppState, action: AppAction): AppState {
         team: {
           ...state.team,
           members: state.team.members.filter((m) => m.id !== action.payload),
+        },
+      };
+    case "UPDATE_TEAM_BRANDING":
+      if (!state.team) return state;
+      return {
+        ...state,
+        team: {
+          ...state.team,
+          companyLogo: action.payload.companyLogo !== undefined ? action.payload.companyLogo : state.team.companyLogo,
+          companyName: action.payload.companyName !== undefined ? action.payload.companyName : state.team.companyName,
         },
       };
     case "HYDRATE":

@@ -196,3 +196,13 @@
 - [x] Use expo-media-library getAssetInfoAsync for EXIF data extraction
 - [x] Update exif-service.ts to use Expo-compatible approach
 - [x] Test on Expo Go to verify fix
+
+## Enterprise White-Label Logo
+- [x] Add companyLogo field to Team data model
+- [x] Add companyName field to Team data model
+- [x] Create Agency Settings screen with logo upload functionality
+- [x] Allow image picker for logo selection
+- [x] Store logo URI in team settings
+- [x] Update PDF service to use custom logo when available
+- [x] Fall back to default PS logo when no custom logo set
+- [x] Display company name in PDF header when set
