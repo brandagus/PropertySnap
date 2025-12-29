@@ -137,3 +137,8 @@
 - [x] Remove team member functionality
 - [x] Filter properties based on user access permissions
 - [ ] Agency/company profile settings
+
+## App Icon Update
+- [x] Generate new app icon with burgundy (#8B2635) and gold (#C59849) color scheme
+- [x] Update icon in all required locations (icon.png, splash-icon.png, favicon.png, android-icon-foreground.png)
+- [x] Update app.config.ts with new logo URL
