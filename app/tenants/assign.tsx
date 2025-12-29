@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { View, Text, Pressable, StyleSheet, TextInput, Alert, ScrollView, KeyboardAvoidingView, Platform } from "react-native";
+import { View, Text, Pressable, StyleSheet, TextInput, Alert, ScrollView, KeyboardAvoidingView, Platform, Linking } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { ScreenContainer } from "@/components/screen-container";
 import { IconSymbol } from "@/components/ui/icon-symbol";
@@ -20,6 +20,9 @@ export default function AssignTenantScreen() {
   const [tenantPhone, setTenantPhone] = useState(property?.tenantPhone || "");
   const [isLoading, setIsLoading] = useState(false);
 
+  // Check if this is a new tenant assignment (not editing existing)
+  const isNewTenant = !property?.tenantName;
+
   if (!property) {
     return (
       <ScreenContainer className="items-center justify-center">
@@ -27,6 +30,115 @@ export default function AssignTenantScreen() {
       </ScreenContainer>
     );
   }
+
+  const generateInvitationMessage = (name: string, address: string) => {
+    return `Hi ${name}! 👋
+
+You've been added as a tenant at ${address}.
+
+Your landlord uses PropertySnap to manage property inspections. Please download the app to:
+• Complete move-in/move-out inspections
+• Document property condition with timestamped photos
+• Sign inspection reports digitally
+
+Download PropertySnap from the App Store or Google Play to get started.
+
+Welcome to your new home!`;
+  };
+
+  const sendSMSInvitation = (name: string, phone: string, address: string) => {
+    const message = generateInvitationMessage(name, address);
+    const encodedMessage = encodeURIComponent(message);
+    
+    let smsUrl: string;
+    if (Platform.OS === "ios") {
+      smsUrl = `sms:${phone}&body=${encodedMessage}`;
+    } else {
+      smsUrl = `sms:${phone}?body=${encodedMessage}`;
+    }
+    
+    Linking.canOpenURL(smsUrl)
+      .then((supported) => {
+        if (supported) {
+          return Linking.openURL(smsUrl);
+        } else {
+          Alert.alert("SMS Not Available", "Unable to open the messaging app on this device.");
+        }
+      })
+      .catch((err) => {
+        console.error("Error opening SMS app:", err);
+        Alert.alert("Error", "Failed to open the messaging app.");
+      });
+  };
+
+  const sendEmailInvitation = (name: string, email: string, address: string) => {
+    const subject = `Welcome to ${address} - PropertySnap Setup`;
+    const body = generateInvitationMessage(name, address);
+    
+    const encodedSubject = encodeURIComponent(subject);
+    const encodedBody = encodeURIComponent(body);
+    
+    const emailUrl = `mailto:${email}?subject=${encodedSubject}&body=${encodedBody}`;
+    
+    Linking.canOpenURL(emailUrl)
+      .then((supported) => {
+        if (supported) {
+          return Linking.openURL(emailUrl);
+        } else {
+          Alert.alert("Email Not Available", "Unable to open the email app on this device.");
+        }
+      })
+      .catch((err) => {
+        console.error("Error opening email app:", err);
+        Alert.alert("Error", "Failed to open the email app.");
+      });
+  };
+
+  const showInvitationOptions = (name: string, email: string | null, phone: string | null, address: string) => {
+    const hasEmail = email && email.trim().length > 0;
+    const hasPhone = phone && phone.trim().length > 0;
+
+    if (!hasEmail && !hasPhone) {
+      // No contact info provided, just show success
+      Alert.alert(
+        "Tenant Assigned",
+        `${name} has been assigned to this property. Add their email or phone number to send them an invitation.`,
+        [{ text: "OK", onPress: () => router.back() }]
+      );
+      return;
+    }
+
+    // Build options based on available contact info
+    const buttons: any[] = [
+      { text: "Skip", style: "cancel", onPress: () => router.back() },
+    ];
+
+    if (hasPhone) {
+      buttons.push({
+        text: "Send SMS",
+        onPress: () => {
+          sendSMSInvitation(name, phone!, address);
+          router.back();
+        },
+      });
+    }
+
+    if (hasEmail) {
+      buttons.push({
+        text: "Send Email",
+        onPress: () => {
+          sendEmailInvitation(name, email!, address);
+          router.back();
+        },
+      });
+    }
+
+    Alert.alert(
+      "Send Invitation?",
+      `Would you like to send ${name} an invitation to join PropertySnap?`,
+      buttons
+    );
+  };
 
   const handleSave = () => {
     if (!tenantName.trim()) {
@@ -40,11 +152,15 @@ export default function AssignTenantScreen() {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     }
     
+    const trimmedName = tenantName.trim();
+    const trimmedEmail = tenantEmail.trim() || null;
+    const trimmedPhone = tenantPhone.trim() || null;
+    
     const updatedProperty = {
       ...property,
-      tenantName: tenantName.trim(),
-      tenantEmail: tenantEmail.trim() || null,
-      tenantPhone: tenantPhone.trim() || null,
+      tenantName: trimmedName,
+      tenantEmail: trimmedEmail,
+      tenantPhone: trimmedPhone,
     };
     
     dispatch({ type: "UPDATE_PROPERTY", payload: updatedProperty });
@@ -54,7 +170,13 @@ export default function AssignTenantScreen() {
       if (Platform.OS !== "web") {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       }
-      router.back();
+      
+      // Only show invitation options for new tenant assignments
+      if (isNewTenant) {
+        showInvitationOptions(trimmedName, trimmedEmail, trimmedPhone, property.address);
+      } else {
+        router.back();
+      }
     }, 300);
   };
 
@@ -122,6 +244,16 @@ export default function AssignTenantScreen() {
             </Text>
           </View>
 
+          {/* Invitation Info for New Tenants */}
+          {isNewTenant && (
+            <View style={[styles.infoCard, { backgroundColor: `${colors.primary}10`, borderColor: colors.primary }]}>
+              <IconSymbol name="paperplane.fill" size={20} color={colors.primary} />
+              <Text style={[styles.infoText, { color: colors.foreground }]}>
+                After saving, you'll have the option to send an invitation via SMS or email.
+              </Text>
+            </View>
+          )}
+
           {/* Tenant Form */}
           <View style={styles.form}>
             <View style={styles.inputGroup}>
@@ -153,6 +285,11 @@ export default function AssignTenantScreen() {
                 keyboardType="email-address"
                 autoCapitalize="none"
               />
+              {isNewTenant && (
+                <Text style={[styles.helperText, { color: colors.muted }]}>
+                  Used for email invitations
+                </Text>
+              )}
             </View>
 
             <View style={styles.inputGroup}>
@@ -169,7 +306,7 @@ export default function AssignTenantScreen() {
                 keyboardType="phone-pad"
               />
               <Text style={[styles.helperText, { color: colors.muted }]}>
-                Required for SMS reminders
+                {isNewTenant ? "Used for SMS invitations and reminders" : "Required for SMS reminders"}
               </Text>
             </View>
           </View>
@@ -186,7 +323,7 @@ export default function AssignTenantScreen() {
             ]}
           >
             <Text style={styles.saveButtonText}>
-              {isLoading ? "Saving..." : "Save Tenant"}
+              {isLoading ? "Saving..." : isNewTenant ? "Save & Continue" : "Save Tenant"}
             </Text>
           </Pressable>
 
@@ -241,7 +378,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     padding: 16,
-    marginBottom: 24,
+    marginBottom: 16,
   },
   propertyLabel: {
     fontSize: 12,
@@ -257,6 +394,20 @@ const styles = StyleSheet.create({
   },
   propertyType: {
     fontSize: 13,
+  },
+  infoCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 14,
+    borderRadius: 10,
+    borderWidth: 1,
+    marginBottom: 20,
+    gap: 12,
+  },
+  infoText: {
+    flex: 1,
+    fontSize: 13,
+    lineHeight: 18,
   },
   form: {
     marginBottom: 24,

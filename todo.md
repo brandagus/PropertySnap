@@ -295,3 +295,10 @@
 - [x] Add ability to unassign tenant from property (removes their access)
 - [x] Show confirmation dialog before unassigning tenant
 - [x] Update property state when tenant details are edited
+
+## Tenant Invitation Feature
+- [x] After assigning tenant, ask if user wants to send invitation
+- [x] Offer choice between SMS or Email invitation
+- [x] Open native SMS app with pre-written welcome message including property address
+- [x] Open native Email app with pre-written welcome message including property address
+- [x] Include instructions to download PropertySnap app in invitation message
