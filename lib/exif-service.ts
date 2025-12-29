@@ -1,5 +1,12 @@
-import * as FileSystem from "expo-file-system/legacy";
-import ExifReader from "exifreader";
+/**
+ * EXIF Service - Extract photo metadata using expo-media-library
+ * Uses native iOS/Android APIs to get actual photo capture timestamps
+ * 
+ * Note: exifreader package was removed due to module resolution issues on React Native
+ */
+
+import * as MediaLibrary from 'expo-media-library';
+import { Platform } from 'react-native';
 
 export interface PhotoTimestamp {
   // The actual capture date from EXIF metadata (if available)
@@ -15,43 +22,11 @@ export interface PhotoTimestamp {
 }
 
 /**
- * Parse EXIF date string to ISO format
- * EXIF dates are typically in format: "YYYY:MM:DD HH:MM:SS"
- */
-function parseExifDate(exifDate: string): string | null {
-  try {
-    // EXIF format: "2024:01:15 14:30:45"
-    // Convert to ISO: "2024-01-15T14:30:45"
-    const match = exifDate.match(/^(\d{4}):(\d{2}):(\d{2})\s+(\d{2}):(\d{2}):(\d{2})$/);
-    if (match) {
-      const [, year, month, day, hour, minute, second] = match;
-      return `${year}-${month}-${day}T${hour}:${minute}:${second}`;
-    }
-    
-    // Try alternative format with dashes
-    const altMatch = exifDate.match(/^(\d{4})-(\d{2})-(\d{2})\s+(\d{2}):(\d{2}):(\d{2})$/);
-    if (altMatch) {
-      const [, year, month, day, hour, minute, second] = altMatch;
-      return `${year}-${month}-${day}T${hour}:${minute}:${second}`;
-    }
-    
-    // If it's already ISO format, return as-is
-    if (exifDate.includes("T")) {
-      return exifDate;
-    }
-    
-    return null;
-  } catch {
-    return null;
-  }
-}
-
-/**
  * Format date for display
  */
-function formatDateForDisplay(dateString: string): string {
+function formatDateForDisplay(dateString: string | Date): string {
   try {
-    const date = new Date(dateString);
+    const date = typeof dateString === 'string' ? new Date(dateString) : dateString;
     return date.toLocaleDateString("en-AU", {
       day: "numeric",
       month: "long",
@@ -60,20 +35,31 @@ function formatDateForDisplay(dateString: string): string {
       minute: "2-digit",
     });
   } catch {
-    return dateString;
+    return String(dateString);
   }
 }
 
 /**
- * Extract EXIF timestamp from a photo file
+ * Extract EXIF timestamp from a photo file using expo-media-library
  * Returns the original capture date if available, with fallback to upload date
  */
 export async function extractPhotoTimestamp(photoUri: string): Promise<PhotoTimestamp> {
   const uploadDate = new Date().toISOString();
   
+  // Web platform doesn't support EXIF extraction
+  if (Platform.OS === 'web') {
+    return {
+      captureDate: null,
+      isExifAvailable: false,
+      uploadDate,
+      displayDate: formatDateForDisplay(uploadDate),
+      warning: "Upload date - original timestamp unavailable",
+    };
+  }
+  
   try {
-    // Skip if not a file URI
-    if (!photoUri || photoUri.startsWith("data:")) {
+    // Skip if not a valid URI
+    if (!photoUri) {
       return {
         captureDate: null,
         isExifAvailable: false,
@@ -83,69 +69,69 @@ export async function extractPhotoTimestamp(photoUri: string): Promise<PhotoTime
       };
     }
     
-    // Read the file as base64
-    const base64 = await FileSystem.readAsStringAsync(photoUri, {
-      encoding: FileSystem.EncodingType.Base64,
-    });
+    // Request permissions
+    const { status } = await MediaLibrary.requestPermissionsAsync();
     
-    // Convert base64 to ArrayBuffer for ExifReader
-    const binaryString = atob(base64);
-    const bytes = new Uint8Array(binaryString.length);
-    for (let i = 0; i < binaryString.length; i++) {
-      bytes[i] = binaryString.charCodeAt(i);
-    }
-    
-    // Parse EXIF data
-    const tags = ExifReader.load(bytes.buffer, { expanded: true });
-    
-    // Try to get the original capture date from various EXIF fields
-    let captureDate: string | null = null;
-    
-    // Priority order for date fields:
-    // 1. DateTimeOriginal - when the photo was actually taken
-    // 2. DateTimeDigitized - when the photo was digitized
-    // 3. DateTime - general modification date
-    // 4. CreateDate - creation date
-    
-    const exifData = (tags.exif || {}) as Record<string, { description?: string }>;
-    const xmpData = (tags.xmp || {}) as Record<string, { description?: string }>;
-    
-    // Check EXIF DateTimeOriginal
-    if (exifData.DateTimeOriginal?.description) {
-      captureDate = parseExifDate(exifData.DateTimeOriginal.description);
-    }
-    
-    // Fallback to DateTimeDigitized
-    if (!captureDate && exifData.DateTimeDigitized?.description) {
-      captureDate = parseExifDate(exifData.DateTimeDigitized.description);
-    }
-    
-    // Fallback to DateTime
-    if (!captureDate && exifData.DateTime?.description) {
-      captureDate = parseExifDate(exifData.DateTime.description);
-    }
-    
-    // Check XMP CreateDate
-    if (!captureDate && xmpData["CreateDate"]?.description) {
-      captureDate = parseExifDate(xmpData["CreateDate"].description);
-    }
-    
-    // Check XMP DateTimeOriginal
-    if (!captureDate && xmpData["DateTimeOriginal"]?.description) {
-      captureDate = parseExifDate(xmpData["DateTimeOriginal"].description);
-    }
-    
-    if (captureDate) {
+    if (status !== 'granted') {
+      console.log('Media library permission not granted');
       return {
-        captureDate,
-        isExifAvailable: true,
+        captureDate: null,
+        isExifAvailable: false,
         uploadDate,
-        displayDate: formatDateForDisplay(captureDate),
-        warning: null,
+        displayDate: formatDateForDisplay(uploadDate),
+        warning: "Upload date - original timestamp unavailable",
       };
     }
     
-    // EXIF data exists but no date found
+    // Handle iOS ph:// URIs (photo library references)
+    if (Platform.OS === 'ios' && photoUri.startsWith('ph://')) {
+      const assetId = photoUri.replace('ph://', '').split('/')[0];
+      
+      try {
+        const asset = await MediaLibrary.getAssetInfoAsync(assetId);
+        
+        if (asset && asset.creationTime) {
+          const captureDate = new Date(asset.creationTime).toISOString();
+          return {
+            captureDate,
+            isExifAvailable: true,
+            uploadDate,
+            displayDate: formatDateForDisplay(captureDate),
+            warning: null,
+          };
+        }
+      } catch (e) {
+        console.log('Could not get asset info for ph:// URI:', e);
+      }
+    }
+    
+    // Handle file:// URIs - create asset to read metadata
+    if (photoUri.startsWith('file://') || photoUri.startsWith('/')) {
+      try {
+        // Create asset to read metadata
+        const asset = await MediaLibrary.createAssetAsync(photoUri);
+        
+        if (asset) {
+          // Get full asset info including creation time
+          const assetInfo = await MediaLibrary.getAssetInfoAsync(asset.id);
+          
+          if (assetInfo && assetInfo.creationTime) {
+            const captureDate = new Date(assetInfo.creationTime).toISOString();
+            return {
+              captureDate,
+              isExifAvailable: true,
+              uploadDate,
+              displayDate: formatDateForDisplay(captureDate),
+              warning: null,
+            };
+          }
+        }
+      } catch (e) {
+        console.log('Could not create/read asset for file:// URI:', e);
+      }
+    }
+
+    // Fallback: no EXIF available
     return {
       captureDate: null,
       isExifAvailable: false,

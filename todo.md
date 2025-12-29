@@ -190,3 +190,9 @@
 - [x] Add property address watermark on photos
 - [x] Apply watermarking when photos are captured/selected
 - [x] Show watermarked photos in app and PDF
+
+## Bug Fix - EXIF Reader Module Error
+- [x] Remove exifreader package (incompatible with React Native/Expo)
+- [x] Use expo-media-library getAssetInfoAsync for EXIF data extraction
+- [x] Update exif-service.ts to use Expo-compatible approach
+- [x] Test on Expo Go to verify fix
