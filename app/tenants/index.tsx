@@ -149,27 +149,7 @@ export default function ManageTenantsScreen() {
       });
   };
 
-  const handleSendSMS = (property: Property) => {
-    if (!property.tenantPhone) {
-      Alert.alert("No Phone Number", "Please add a phone number for this tenant first.");
-      return;
-    }
-    
-    const tenantName = property.tenantName || "Tenant";
-    const defaultMessage = `Hi ${tenantName}, we have a pending inspection for ${property.address}. Would you mind completing it when you get a chance? If not possible, could you let us know when this week we can send someone to perform it? Thanks!`;
-    
-    // Navigate to SMS compose screen with pre-filled message
-    router.push({
-      pathname: "/tenants/sms" as any,
-      params: {
-        propertyId: property.id,
-        phone: property.tenantPhone,
-        tenantName: tenantName,
-        address: property.address,
-        message: defaultMessage,
-      },
-    });
-  };
+
 
   const renderPropertyItem = ({ item: property }: { item: Property }) => {
     const hasTenant = property.tenantName || property.tenantEmail;
@@ -232,16 +212,16 @@ export default function ManageTenantsScreen() {
               </Pressable>
               
               <Pressable
-                onPress={() => handleSendSMS(property)}
+                onPress={() => router.push({ pathname: "/tenants/edit" as any, params: { propertyId: property.id } })}
                 style={({ pressed }) => [
                   styles.actionButton,
-                  styles.smsButton,
-                  { borderColor: colors.primary },
+                  styles.editButton,
+                  { borderColor: colors.border },
                   pressed && { opacity: 0.9, transform: [{ scale: 0.98 }] },
                 ]}
               >
-                <IconSymbol name="message.fill" size={16} color={colors.primary} />
-                <Text style={[styles.actionButtonText, { color: colors.primary }]}>Send SMS</Text>
+                <IconSymbol name="pencil" size={16} color={colors.foreground} />
+                <Text style={[styles.actionButtonText, { color: colors.foreground }]}>Edit Tenant</Text>
               </Pressable>
             </View>
           </View>
@@ -428,9 +408,9 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     gap: 6,
   },
-  smsButton: {
+  editButton: {
     backgroundColor: "transparent",
-    borderWidth: 1.5,
+    borderWidth: 1,
   },
   actionButtonText: {
     fontSize: 13,

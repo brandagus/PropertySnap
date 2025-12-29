@@ -288,3 +288,10 @@
 - [x] After creating inspection, ask "Do you want to send an SMS?"
 - [x] If yes, open native SMS app (iMessage/Android Messages) with pre-populated phone number and message
 - [x] SMS message template: "Hey [Tenant Name], your landlord has requested you to complete a property inspection for [Address]. Please open the PropertySnap app to get started."
+
+## Edit Tenant Feature
+- [x] Replace Send SMS button with Edit Tenant button in Manage Tenants screen
+- [x] Create Edit Tenant screen with fields for name, phone, email
+- [x] Add ability to unassign tenant from property (removes their access)
+- [x] Show confirmation dialog before unassigning tenant
+- [x] Update property state when tenant details are edited
