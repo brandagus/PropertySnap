@@ -30,7 +30,7 @@ export default function PropertyDetailScreen() {
   const activeInspection = property.inspections.find(i => i.status === "pending");
   const completedInspections = property.inspections.filter(i => i.status === "completed");
 
-  const handleStartInspection = (type: "move-in" | "move-out") => {
+  const handleStartInspection = (type: "move-in" | "move-out" | "routine") => {
     if (Platform.OS !== "web") {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     }
@@ -260,7 +260,7 @@ export default function PropertyDetailScreen() {
                 <Text className="text-sm font-medium text-warning ml-2">INSPECTION IN PROGRESS</Text>
               </View>
               <Text className="text-base text-foreground mb-3">
-                {activeInspection.type === "move-in" ? "Move-in" : "Move-out"} inspection started on{" "}
+                {activeInspection.type === "move-in" ? "Move-In" : activeInspection.type === "move-out" ? "Move-Out" : "Routine"} inspection started on{" "}
                 {new Date(activeInspection.createdAt).toLocaleDateString()}
               </Text>
               <Pressable
@@ -281,7 +281,7 @@ export default function PropertyDetailScreen() {
         {!activeInspection && (
           <View className="px-6 mb-4">
             <Text className="text-sm font-medium text-muted mb-3">START NEW INSPECTION</Text>
-            <View className="flex-row gap-3">
+            <View style={styles.inspectionButtonsContainer}>
               <Pressable
                 onPress={() => handleStartInspection("move-in")}
                 style={({ pressed }) => [
@@ -290,8 +290,19 @@ export default function PropertyDetailScreen() {
                   pressed && styles.buttonPressed,
                 ]}
               >
-                <IconSymbol name="camera.fill" size={20} color="#FFFFFF" />
-                <Text className="text-white text-base font-semibold ml-2">Move-in</Text>
+                <IconSymbol name="camera.fill" size={18} color="#FFFFFF" />
+                <Text className="text-white text-sm font-semibold ml-2">Move-In</Text>
+              </Pressable>
+              <Pressable
+                onPress={() => handleStartInspection("routine")}
+                style={({ pressed }) => [
+                  styles.inspectionButton,
+                  { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.primary },
+                  pressed && styles.buttonPressed,
+                ]}
+              >
+                <IconSymbol name="camera.fill" size={18} color={colors.primary} />
+                <Text className="text-primary text-sm font-semibold ml-2">Routine</Text>
               </Pressable>
               <Pressable
                 onPress={() => handleStartInspection("move-out")}
@@ -301,8 +312,8 @@ export default function PropertyDetailScreen() {
                   pressed && styles.buttonPressed,
                 ]}
               >
-                <IconSymbol name="camera.fill" size={20} color={colors.primary} />
-                <Text className="text-primary text-base font-semibold ml-2">Move-out</Text>
+                <IconSymbol name="camera.fill" size={18} color={colors.primary} />
+                <Text className="text-primary text-sm font-semibold ml-2">Move-Out</Text>
               </Pressable>
             </View>
           </View>
@@ -331,7 +342,7 @@ export default function PropertyDetailScreen() {
                   </View>
                   <View className="flex-1 ml-3">
                     <Text className="text-base font-medium text-foreground">
-                      {inspection.type === "move-in" ? "Move-in" : "Move-out"} Inspection
+                      {inspection.type === "move-in" ? "Move-In" : inspection.type === "move-out" ? "Move-Out" : "Routine"} Inspection
                     </Text>
                     <Text className="text-sm text-muted">
                       {inspection.completedAt ? new Date(inspection.completedAt).toLocaleDateString() : "N/A"}
@@ -392,9 +403,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  inspectionButtonsContainer: {
+    flexDirection: "row",
+    gap: 8,
+  },
   inspectionButton: {
     flex: 1,
-    height: 48,
+    height: 44,
     borderRadius: 8,
     flexDirection: "row",
     alignItems: "center",

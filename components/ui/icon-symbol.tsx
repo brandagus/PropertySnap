@@ -48,11 +48,15 @@ const MAPPING = {
   
   // Team Management
   "person.3.fill": "groups",
+  "person.2.fill": "people",
+  "person.2": "people-outline",
   "person.badge.plus": "person-add",
   "calendar": "event",
   "checkmark": "check",
   "doc.fill": "description",
   "printer.fill": "print",
+  "message.fill": "sms",
+  "trash": "delete-outline",
   
   // Settings
   "gearshape.fill": "settings",

@@ -1,5 +1,5 @@
 /**
- * EXIF Service - Extract photo metadata using expo-media-library
+ * EXIF Service - Extract photo metadata using expo-media-library and expo-image-picker
  * Uses native iOS/Android APIs to get actual photo capture timestamps
  * 
  * Note: exifreader package was removed due to module resolution issues on React Native
@@ -40,8 +40,26 @@ function formatDateForDisplay(dateString: string | Date): string {
 }
 
 /**
- * Extract EXIF timestamp from a photo file using expo-media-library
- * Returns the original capture date if available, with fallback to upload date
+ * Extract asset ID from various URI formats
+ */
+function extractAssetId(uri: string): string | null {
+  // iOS ph:// format: ph://ED7AC36B-A150-4C38-BB8C-B6D696F4F2ED/L0/001
+  if (uri.startsWith('ph://')) {
+    return uri.replace('ph://', '').split('/')[0];
+  }
+  
+  // iOS assets-library format
+  if (uri.includes('assets-library://')) {
+    const match = uri.match(/id=([A-F0-9-]+)/i);
+    return match ? match[1] : null;
+  }
+  
+  return null;
+}
+
+/**
+ * Extract EXIF timestamp from a photo file
+ * For gallery photos, we need to query MediaLibrary to get the original creation time
  */
 export async function extractPhotoTimestamp(photoUri: string): Promise<PhotoTimestamp> {
   const uploadDate = new Date().toISOString();
@@ -83,10 +101,10 @@ export async function extractPhotoTimestamp(photoUri: string): Promise<PhotoTime
       };
     }
     
-    // Handle iOS ph:// URIs (photo library references)
-    if (Platform.OS === 'ios' && photoUri.startsWith('ph://')) {
-      const assetId = photoUri.replace('ph://', '').split('/')[0];
-      
+    // Try to extract asset ID from the URI
+    const assetId = extractAssetId(photoUri);
+    
+    if (assetId) {
       try {
         const asset = await MediaLibrary.getAssetInfoAsync(assetId);
         
@@ -101,33 +119,54 @@ export async function extractPhotoTimestamp(photoUri: string): Promise<PhotoTime
           };
         }
       } catch (e) {
-        console.log('Could not get asset info for ph:// URI:', e);
+        console.log('Could not get asset info for asset ID:', assetId, e);
       }
     }
     
-    // Handle file:// URIs - create asset to read metadata
+    // For file:// URIs from ImagePicker, try to find the asset in the library
+    // ImagePicker returns a cached copy, so we need to search for the original
     if (photoUri.startsWith('file://') || photoUri.startsWith('/')) {
       try {
-        // Create asset to read metadata
-        const asset = await MediaLibrary.createAssetAsync(photoUri);
+        // Get recent photos and try to match by filename or recent timestamp
+        const recentAssets = await MediaLibrary.getAssetsAsync({
+          first: 100,
+          sortBy: [MediaLibrary.SortBy.creationTime],
+          mediaType: MediaLibrary.MediaType.photo,
+        });
         
-        if (asset) {
-          // Get full asset info including creation time
-          const assetInfo = await MediaLibrary.getAssetInfoAsync(asset.id);
+        // The most recently accessed photo is likely the one the user just picked
+        // This is a heuristic - ImagePicker doesn't give us the original asset ID
+        if (recentAssets.assets.length > 0) {
+          // Try to find a matching asset by checking the filename in the URI
+          const filename = photoUri.split('/').pop()?.toLowerCase();
           
-          if (assetInfo && assetInfo.creationTime) {
-            const captureDate = new Date(assetInfo.creationTime).toISOString();
-            return {
-              captureDate,
-              isExifAvailable: true,
-              uploadDate,
-              displayDate: formatDateForDisplay(captureDate),
-              warning: null,
-            };
+          for (const asset of recentAssets.assets) {
+            const assetFilename = asset.filename?.toLowerCase();
+            
+            // Check if filenames match (without extensions sometimes)
+            if (assetFilename && filename) {
+              const assetBase = assetFilename.replace(/\.[^.]+$/, '');
+              const uriBase = filename.replace(/\.[^.]+$/, '');
+              
+              if (assetFilename === filename || assetBase === uriBase) {
+                const assetInfo = await MediaLibrary.getAssetInfoAsync(asset.id);
+                
+                if (assetInfo && assetInfo.creationTime) {
+                  const captureDate = new Date(assetInfo.creationTime).toISOString();
+                  return {
+                    captureDate,
+                    isExifAvailable: true,
+                    uploadDate,
+                    displayDate: formatDateForDisplay(captureDate),
+                    warning: null,
+                  };
+                }
+              }
+            }
           }
         }
       } catch (e) {
-        console.log('Could not create/read asset for file:// URI:', e);
+        console.log('Could not search media library:', e);
       }
     }
 
@@ -152,6 +191,46 @@ export async function extractPhotoTimestamp(photoUri: string): Promise<PhotoTime
       warning: "Upload date - original timestamp unavailable",
     };
   }
+}
+
+/**
+ * Extract timestamp from ImagePicker result which may include exif data
+ * This is called with the full ImagePicker result to access any available metadata
+ */
+export async function extractTimestampFromPickerResult(
+  uri: string,
+  exif?: Record<string, unknown>
+): Promise<PhotoTimestamp> {
+  const uploadDate = new Date().toISOString();
+  
+  // First check if ImagePicker provided EXIF data directly
+  if (exif) {
+    // Look for DateTimeOriginal or DateTimeDigitized
+    const dateTimeOriginal = exif.DateTimeOriginal || exif.DateTime || exif.DateTimeDigitized;
+    
+    if (dateTimeOriginal && typeof dateTimeOriginal === 'string') {
+      try {
+        // EXIF date format: "2024:12:26 14:30:45"
+        const [datePart, timePart] = dateTimeOriginal.split(' ');
+        const [year, month, day] = datePart.split(':');
+        const isoDate = `${year}-${month}-${day}T${timePart}`;
+        const captureDate = new Date(isoDate).toISOString();
+        
+        return {
+          captureDate,
+          isExifAvailable: true,
+          uploadDate,
+          displayDate: formatDateForDisplay(captureDate),
+          warning: null,
+        };
+      } catch (e) {
+        console.log('Could not parse EXIF date:', dateTimeOriginal, e);
+      }
+    }
+  }
+  
+  // Fall back to MediaLibrary extraction
+  return extractPhotoTimestamp(uri);
 }
 
 /**

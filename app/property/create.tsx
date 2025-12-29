@@ -93,6 +93,7 @@ export default function CreatePropertyScreen() {
       tenantId: null,
       tenantName: null,
       tenantEmail: null,
+      tenantPhone: null,
       inspections: [],
       createdAt: new Date().toISOString(),
     };

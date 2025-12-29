@@ -9,7 +9,7 @@ export type ConditionRating = "pass" | "pass-attention" | "fail";
 export type LegacyConditionRating = "excellent" | "good" | "fair" | "poor" | "damaged";
 export type PropertyType = "apartment" | "house" | "townhouse" | "studio";
 export type InspectionStatus = "pending" | "completed" | "archived";
-export type InspectionType = "move-in" | "move-out";
+export type InspectionType = "move-in" | "move-out" | "routine";
 
 // Team Management Types
 export type TeamRole = "admin" | "manager" | "inspector" | "viewer";
@@ -81,6 +81,17 @@ export interface Inspection {
   inspectorName?: string;
 }
 
+// Tenant interface for managing tenants
+export interface Tenant {
+  id: string;
+  name: string;
+  email: string;
+  phone: string | null;
+  propertyId: string | null; // Currently assigned property
+  createdAt: string;
+  lastInspectionRequest: string | null; // Track when last request was sent
+}
+
 export interface Property {
   id: string;
   address: string;
@@ -92,6 +103,7 @@ export interface Property {
   tenantId: string | null;
   tenantName: string | null;
   tenantEmail: string | null;
+  tenantPhone: string | null; // Added for SMS
   inspections: Inspection[];
   createdAt: string;
   // Team assignment

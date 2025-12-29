@@ -516,7 +516,7 @@ async function generatePDFHTML(property: Property, inspection: Inspection, brand
         .photo-container {
           position: relative;
           width: 100%;
-          height: 160px;
+          height: 280px;
           overflow: hidden;
         }
         
@@ -528,7 +528,7 @@ async function generatePDFHTML(property: Property, inspection: Inspection, brand
         
         .photo-placeholder {
           width: 100%;
-          height: 160px;
+          height: 280px;
           background: ${COLORS.lightGray};
           display: flex;
           flex-direction: column;

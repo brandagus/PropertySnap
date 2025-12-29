@@ -8,7 +8,7 @@ import * as Haptics from "expo-haptics";
 import { Platform } from "react-native";
 
 interface MenuItem {
-  icon: "person.circle.fill" | "bell.fill" | "creditcard.fill" | "doc.text.fill" | "questionmark.circle.fill" | "info.circle.fill" | "person.3.fill" | "building.2.fill";
+  icon: "person.circle.fill" | "bell.fill" | "creditcard.fill" | "doc.text.fill" | "questionmark.circle.fill" | "info.circle.fill" | "person.3.fill" | "building.2.fill" | "person.2.fill";
   title: string;
   subtitle?: string;
   onPress: () => void;
@@ -69,6 +69,17 @@ export default function AccountScreen() {
           ? "Free Plan" 
           : "Pro Plan",
       onPress: () => {},
+      showChevron: true,
+    },
+  ];
+
+  // Tenant management menu items
+  const tenantMenuItems: MenuItem[] = [
+    {
+      icon: "person.2.fill" as any,
+      title: "Manage Tenants",
+      subtitle: `${state.properties.filter(p => p.tenantName).length} properties with tenants`,
+      onPress: () => router.push("/tenants" as any),
       showChevron: true,
     },
   ];
@@ -218,6 +229,7 @@ export default function AccountScreen() {
         {/* Menu Sections */}
         <View style={styles.menuContainer}>
           {renderSection("ACCOUNT", accountMenuItems)}
+          {showTeamMenu && renderSection("TENANTS", tenantMenuItems)}
           {showTeamMenu && renderSection("ENTERPRISE", teamMenuItems)}
           {renderSection("SUPPORT", supportMenuItems)}
         </View>

@@ -218,3 +218,29 @@
 - [x] Change footer to minimal "Captured using PropertySnap"
 - [x] Allow custom company name text (not just logo) in agency settings
 - [x] Use custom company name in PDF header when set
+
+## Inspection Type Update
+- [x] Add "Routine" inspection type for mid-tenancy inspections
+- [x] Update inspection type selector to show Move-In, Move-Out, Routine options
+
+## UI Label Fixes
+- [x] Change "Add Checkpoint" button to "Add Photo"
+- [x] Update all references to checkpoint to use "Photo" terminology
+
+## PDF Photo Size Fix
+- [x] Make photos larger in PDF for better visibility
+- [x] Ensure photos are clear enough to verify condition assessments
+
+## EXIF Timestamp Fix
+- [x] Fix EXIF extraction to get actual capture date from gallery photos
+- [x] Photos from gallery should show when they were taken, not upload time
+
+## Manage Tenants Feature
+- [x] Add "Manage Tenants" option in Account section
+- [x] Create tenant data model with name, email, phone, assigned property
+- [x] View list of properties with assigned tenants
+- [x] Add tenant to property functionality
+- [x] Request Inspection button (in-app notification)
+- [x] Send SMS Reminder button with editable template
+- [x] Default SMS template with tenant name and property address
+- [x] Allow landlord to customize SMS message before sending

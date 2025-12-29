@@ -9,7 +9,7 @@ import { generateInspectionPDF, printInspectionPDF, PDFBrandingOptions } from "@
 import * as Haptics from "expo-haptics";
 import { Platform } from "react-native";
 import * as ImagePicker from "expo-image-picker";
-import { extractPhotoTimestamp } from "@/lib/exif-service";
+import { extractPhotoTimestamp, extractTimestampFromPickerResult } from "@/lib/exif-service";
 
 const conditionOptions: { value: ConditionRating; label: string; description: string; color: string }[] = [
   { value: "pass", label: "Pass", description: "No issues, everything is fine", color: "#2D5C3F" },
@@ -106,14 +106,18 @@ export default function InspectionDetailScreen() {
   const handlePickPhoto = async (checkpoint: Checkpoint) => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ["images"],
-      allowsEditing: true,
-      aspect: [4, 3],
+      allowsEditing: false, // Disable editing to preserve EXIF data
       quality: 0.8,
+      exif: true, // Request EXIF data from ImagePicker
     });
 
     if (!result.canceled && result.assets[0]) {
-      // Extract EXIF timestamp from the photo
-      const timestampData = await extractPhotoTimestamp(result.assets[0].uri);
+      // Extract EXIF timestamp from the photo - use picker result which may have EXIF
+      const asset = result.assets[0];
+      const timestampData = await extractTimestampFromPickerResult(
+        asset.uri,
+        asset.exif as Record<string, unknown> | undefined
+      );
       
       const updatedCheckpoint: Checkpoint = {
         ...checkpoint,
@@ -162,7 +166,7 @@ export default function InspectionDetailScreen() {
     const newCheckpoint: Checkpoint = {
       id: generateId(),
       roomName,
-      title: "New Checkpoint",
+      title: "Photo",
       landlordPhoto: null,
       tenantPhoto: null,
       moveOutPhoto: null,
@@ -698,7 +702,7 @@ export default function InspectionDetailScreen() {
                     {/* Checkpoints */}
                     {checkpoints.map(renderCheckpoint)}
                     
-                    {/* Add Checkpoint Button */}
+                    {/* Add Photo Button */}
                     <Pressable
                       onPress={() => handleAddCheckpoint(roomName)}
                       style={({ pressed }) => [
@@ -709,7 +713,7 @@ export default function InspectionDetailScreen() {
                     >
                       <IconSymbol name="plus" size={18} color={colors.primary} />
                       <Text className="text-sm font-medium ml-2" style={{ color: colors.primary }}>
-                        Add Checkpoint
+                        Add Photo
                       </Text>
                     </Pressable>
                   </View>
