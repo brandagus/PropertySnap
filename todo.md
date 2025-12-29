@@ -142,3 +142,8 @@
 - [x] Generate new app icon with burgundy (#8B2635) and gold (#C59849) color scheme
 - [x] Update icon in all required locations (icon.png, splash-icon.png, favicon.png, android-icon-foreground.png)
 - [x] Update app.config.ts with new logo URL
+
+## Condition Display Fix
+- [x] Remove "Not Inspected" from individual photo checkpoints without assessment (leave blank)
+- [x] Only show "Not Inspected" at room level when room has no photo AND no assessment
+- [x] Update PDF service to follow same logic

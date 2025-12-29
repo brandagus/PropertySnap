@@ -69,8 +69,10 @@ function getConditionBgColor(condition: string | null): string {
 }
 
 // Format condition for display
+// Returns empty string for null condition (individual checkpoints)
+// "Not Inspected" is only shown at room level when room has no photos AND no assessments
 function formatCondition(condition: string | null): string {
-  if (!condition) return "Not Inspected";
+  if (!condition) return "";
   switch (condition) {
     case "pass":
       return "Pass";
@@ -148,9 +150,17 @@ async function generatePDFHTML(property: Property, inspection: Inspection): Prom
   // Generate room sections HTML
   const roomSections = Object.entries(processedCheckpoints)
     .map(
-      ([room, checkpoints]) => `
+      ([room, checkpoints]) => {
+        // Check if entire room has no photos AND no assessments
+        const roomHasAnyPhoto = checkpoints.some(cp => !!cp.photoBase64);
+        const roomHasAnyCondition = checkpoints.some(cp => 
+          cp.landlordCondition || cp.tenantCondition || cp.moveOutCondition
+        );
+        const roomNotInspected = !roomHasAnyPhoto && !roomHasAnyCondition;
+        
+        return `
       <div class="room-section">
-        <h2 class="room-title">${room}</h2>
+        <h2 class="room-title">${room}${roomNotInspected ? ' <span style="font-size: 14px; color: #6B6B6B; font-weight: normal;">(Not Inspected)</span>' : ''}</h2>
         <div class="checkpoints-grid">
           ${checkpoints
             .map(
@@ -158,6 +168,7 @@ async function generatePDFHTML(property: Property, inspection: Inspection): Prom
                 const condition = checkpoint.landlordCondition || checkpoint.tenantCondition || checkpoint.moveOutCondition;
                 const hasPhoto = !!checkpoint.photoBase64;
                 const hasNotes = !!checkpoint.notes && checkpoint.notes.trim().length > 0;
+                const conditionText = formatCondition(condition);
                 
                 return `
             <div class="checkpoint-card">
@@ -172,13 +183,13 @@ async function generatePDFHTML(property: Property, inspection: Inspection): Prom
               }
               <div class="checkpoint-details">
                 <h3 class="checkpoint-title">${checkpoint.title}</h3>
-                <div class="condition-badge" style="background-color: ${getConditionBgColor(condition)}; color: ${getConditionColor(condition)}; border: 1px solid ${getConditionColor(condition)};">
-                  ${formatCondition(condition)}
-                </div>
+                ${conditionText ? `<div class="condition-badge" style="background-color: ${getConditionBgColor(condition)}; color: ${getConditionColor(condition)}; border: 1px solid ${getConditionColor(condition)};">
+                  ${conditionText}
+                </div>` : ''}
                 <div class="checkpoint-notes">
                   ${hasNotes ? checkpoint.notes : '<span class="no-info">No information provided</span>'}
                 </div>
-                ${checkpoint.timestamp ? `<p class="checkpoint-timestamp">Inspected: ${formatDate(checkpoint.timestamp)} at ${formatTime(checkpoint.timestamp)}</p>` : '<p class="checkpoint-timestamp">Not yet inspected</p>'}
+                ${checkpoint.timestamp ? `<p class="checkpoint-timestamp">Inspected: ${formatDate(checkpoint.timestamp)} at ${formatTime(checkpoint.timestamp)}</p>` : ''}
               </div>
             </div>
           `;
@@ -187,7 +198,8 @@ async function generatePDFHTML(property: Property, inspection: Inspection): Prom
             .join("")}
         </div>
       </div>
-    `
+    `;
+      }
     )
     .join("");
 
