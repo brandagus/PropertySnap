@@ -139,6 +139,9 @@ async function generatePDFHTML(property: Property, inspection: Inspection, brand
 
   // Get property profile photo for cover (NOT first inspection photo)
   const profilePhotoBase64 = await getBase64Image(property.profilePhoto);
+  
+  // Get custom logo if provided
+  const customLogoBase64 = branding?.companyLogo ? await getBase64Image(branding.companyLogo) : null;
 
   // Generate room sections HTML - no room numbers, Photo 1/2/3 labels
   const roomSections = Object.entries(processedCheckpoints)
@@ -208,6 +211,9 @@ async function generatePDFHTML(property: Property, inspection: Inspection, brand
   const landlordSigBase64 = await getBase64Image(inspection.landlordSignature);
   const tenantSigBase64 = await getBase64Image(inspection.tenantSignature);
 
+  // Determine company name for display
+  const displayCompanyName = branding?.companyName || 'PropertySnap';
+
   return `
     <!DOCTYPE html>
     <html>
@@ -219,11 +225,7 @@ async function generatePDFHTML(property: Property, inspection: Inspection, brand
       <style>
         @page {
           size: A4;
-          margin: 20mm 25mm;
-        }
-        
-        @page :first {
-          margin: 0;
+          margin: 25mm 30mm;
         }
         
         * {
@@ -247,160 +249,150 @@ async function generatePDFHTML(property: Property, inspection: Inspection, brand
         /* ==================== COVER PAGE ==================== */
         .cover-page {
           page-break-after: always;
-          min-height: 100vh;
           background: ${COLORS.cream};
-          position: relative;
-          overflow: hidden;
+          padding: 50px 60px;
+          min-height: 100%;
         }
         
         .cover-header-bar {
           background: ${COLORS.burgundy};
-          height: 14px;
+          height: 8px;
           width: 100%;
-        }
-        
-        .cover-content {
-          padding: 60px 70px;
-          display: flex;
-          flex-direction: column;
-          min-height: calc(100vh - 14px);
+          margin-bottom: 40px;
+          border-radius: 4px;
         }
         
         .cover-logo-section {
           display: flex;
           align-items: center;
-          margin-bottom: 50px;
+          margin-bottom: 40px;
         }
         
         .cover-logo {
-          width: 80px;
-          height: 80px;
+          width: 70px;
+          height: 70px;
           background: ${COLORS.burgundy};
-          border-radius: 16px;
+          border-radius: 14px;
           display: flex;
           align-items: center;
           justify-content: center;
           font-family: 'Crimson Pro', Georgia, serif;
-          font-size: 36px;
+          font-size: 32px;
           color: ${COLORS.white};
           font-weight: 700;
-          margin-right: 24px;
-          box-shadow: 0 6px 16px rgba(139, 38, 53, 0.35);
+          margin-right: 20px;
+          box-shadow: 0 4px 12px rgba(139, 38, 53, 0.3);
         }
         
-        .cover-brand {
-          display: flex;
-          flex-direction: column;
+        .cover-logo-image {
+          width: 70px;
+          height: 70px;
+          border-radius: 14px;
+          object-fit: contain;
+          background: white;
+          margin-right: 20px;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         }
         
         .cover-brand-name {
           font-family: 'Crimson Pro', Georgia, serif;
-          font-size: 32px;
+          font-size: 28px;
           font-weight: 700;
           color: ${COLORS.burgundy};
           letter-spacing: -0.5px;
         }
         
-        .cover-brand-tagline {
-          font-size: 13px;
-          color: ${COLORS.mutedText};
-          font-style: italic;
-          margin-top: 4px;
-        }
-        
         .cover-gold-divider {
-          height: 4px;
+          height: 3px;
           background: linear-gradient(90deg, ${COLORS.gold} 0%, ${COLORS.goldLight} 50%, ${COLORS.gold} 100%);
-          margin: 40px 0;
+          margin: 35px 0;
           border-radius: 2px;
         }
         
         .cover-document-title {
           text-align: center;
-          margin: 40px 0 50px 0;
+          margin: 35px 0 40px 0;
         }
         
         .cover-document-title h1 {
-          font-size: 48px;
+          font-size: 42px;
           font-weight: 700;
           color: ${COLORS.burgundy};
           letter-spacing: -1px;
-          margin-bottom: 12px;
+          margin-bottom: 10px;
         }
         
         .cover-document-subtitle {
-          font-size: 16px;
+          font-size: 14px;
           color: ${COLORS.navy};
           font-weight: 600;
           text-transform: uppercase;
-          letter-spacing: 4px;
+          letter-spacing: 3px;
         }
         
         .cover-photo-section {
-          flex: 1;
           display: flex;
           justify-content: center;
-          align-items: center;
           margin: 30px 0;
         }
         
         .cover-photo-frame {
           position: relative;
-          max-width: 450px;
+          max-width: 400px;
           width: 100%;
         }
         
         .cover-photo-border {
           position: absolute;
-          top: -10px;
-          left: -10px;
-          right: -10px;
-          bottom: -10px;
-          border: 4px solid ${COLORS.gold};
-          border-radius: 14px;
+          top: -8px;
+          left: -8px;
+          right: -8px;
+          bottom: -8px;
+          border: 3px solid ${COLORS.gold};
+          border-radius: 12px;
           pointer-events: none;
         }
         
         .cover-photo {
           width: 100%;
-          height: 300px;
+          height: 250px;
           object-fit: cover;
-          border-radius: 10px;
-          box-shadow: 0 10px 40px rgba(0, 0, 0, 0.18);
+          border-radius: 8px;
+          box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
         }
         
         .cover-property-card {
           background: ${COLORS.white};
-          border-radius: 14px;
-          padding: 36px 44px;
-          margin-top: 40px;
-          box-shadow: 0 6px 24px rgba(0, 0, 0, 0.1);
-          border-left: 6px solid ${COLORS.burgundy};
+          border-radius: 12px;
+          padding: 30px 36px;
+          margin-top: 30px;
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+          border-left: 5px solid ${COLORS.burgundy};
         }
         
         .cover-property-address {
           font-family: 'Crimson Pro', Georgia, serif;
-          font-size: 28px;
+          font-size: 24px;
           font-weight: 600;
           color: ${COLORS.navy};
-          margin-bottom: 20px;
+          margin-bottom: 18px;
           line-height: 1.3;
         }
         
         .cover-property-meta {
           display: flex;
-          gap: 40px;
+          gap: 30px;
           flex-wrap: wrap;
         }
         
         .cover-meta-item {
           display: flex;
           flex-direction: column;
-          gap: 4px;
+          gap: 3px;
         }
         
         .cover-meta-label {
-          font-size: 10px;
+          font-size: 9px;
           color: ${COLORS.mutedText};
           text-transform: uppercase;
           letter-spacing: 1px;
@@ -408,7 +400,7 @@ async function generatePDFHTML(property: Property, inspection: Inspection, brand
         }
         
         .cover-meta-value {
-          font-size: 15px;
+          font-size: 14px;
           color: ${COLORS.navy};
           font-weight: 600;
         }
@@ -416,29 +408,28 @@ async function generatePDFHTML(property: Property, inspection: Inspection, brand
         .cover-legal-notice {
           background: ${COLORS.white};
           border: 2px solid ${COLORS.burgundy};
-          border-radius: 10px;
-          padding: 24px 30px;
-          margin-top: 40px;
+          border-radius: 8px;
+          padding: 20px 24px;
+          margin-top: 30px;
         }
         
         .cover-legal-notice h4 {
-          font-size: 14px;
+          font-size: 12px;
           font-weight: 700;
           color: ${COLORS.burgundy};
-          margin-bottom: 10px;
+          margin-bottom: 8px;
           text-transform: uppercase;
           letter-spacing: 1px;
         }
         
         .cover-legal-notice p {
-          font-size: 11px;
+          font-size: 10px;
           color: ${COLORS.charcoal};
-          line-height: 1.8;
+          line-height: 1.7;
         }
         
         /* ==================== REPORT PAGES ==================== */
         .report-page {
-          padding: 0;
           background: ${COLORS.white};
         }
         
@@ -446,13 +437,13 @@ async function generatePDFHTML(property: Property, inspection: Inspection, brand
           display: flex;
           justify-content: space-between;
           align-items: flex-start;
-          padding-bottom: 28px;
+          padding-bottom: 24px;
           border-bottom: 3px solid ${COLORS.burgundy};
-          margin-bottom: 50px;
+          margin-bottom: 30px;
         }
         
         .report-header-left h1 {
-          font-size: 36px;
+          font-size: 28px;
           font-weight: 700;
           color: ${COLORS.burgundy};
           margin-bottom: 6px;
@@ -460,8 +451,7 @@ async function generatePDFHTML(property: Property, inspection: Inspection, brand
         
         .report-header-left p {
           font-size: 13px;
-          color: ${COLORS.mutedText};
-          font-style: italic;
+          color: ${COLORS.charcoal};
         }
         
         .report-header-right {
@@ -469,70 +459,65 @@ async function generatePDFHTML(property: Property, inspection: Inspection, brand
         }
         
         .report-header-right .date {
-          font-size: 15px;
+          font-size: 14px;
           font-weight: 600;
           color: ${COLORS.navy};
         }
         
         .report-header-right .type {
           font-size: 12px;
-          color: ${COLORS.gold};
-          font-weight: 700;
-          text-transform: uppercase;
-          letter-spacing: 1.5px;
-          margin-top: 6px;
+          color: ${COLORS.mutedText};
+          margin-top: 4px;
         }
         
-        /* Room Sections - NO NUMBERS */
+        /* Room Sections */
         .room-section {
-          margin-bottom: 60px;
+          margin-bottom: 40px;
           page-break-inside: avoid;
         }
         
         .room-header {
-          margin-bottom: 16px;
+          margin-bottom: 12px;
         }
         
         .room-title {
-          font-size: 28px;
-          font-weight: 700;
+          font-size: 22px;
+          font-weight: 600;
           color: ${COLORS.burgundy};
         }
         
         .not-inspected-badge {
-          font-size: 14px;
-          color: ${COLORS.mutedText};
+          font-size: 12px;
           font-weight: 400;
+          color: ${COLORS.mutedText};
           font-style: italic;
         }
         
         .gold-divider {
-          height: 3px;
-          background: linear-gradient(90deg, ${COLORS.gold} 0%, ${COLORS.goldLight} 40%, transparent 100%);
-          margin-bottom: 30px;
-          border-radius: 2px;
+          height: 2px;
+          background: ${COLORS.gold};
+          margin-bottom: 20px;
+          border-radius: 1px;
         }
         
-        /* Checkpoints Grid */
         .checkpoints-grid {
           display: grid;
           grid-template-columns: repeat(2, 1fr);
-          gap: 28px;
+          gap: 20px;
         }
         
         .checkpoint-card {
           background: ${COLORS.cream};
-          border-radius: 12px;
+          border-radius: 10px;
           overflow: hidden;
           border: 1px solid ${COLORS.lightGray};
         }
         
         .photo-container {
-          width: 100%;
-          height: 180px;
-          overflow: hidden;
-          background: ${COLORS.lightGray};
           position: relative;
+          width: 100%;
+          height: 160px;
+          overflow: hidden;
         }
         
         .checkpoint-photo {
@@ -543,175 +528,157 @@ async function generatePDFHTML(property: Property, inspection: Inspection, brand
         
         .photo-placeholder {
           width: 100%;
-          height: 180px;
-          background: linear-gradient(135deg, ${COLORS.lightGray} 0%, ${COLORS.cream} 100%);
+          height: 160px;
+          background: ${COLORS.lightGray};
           display: flex;
           flex-direction: column;
           align-items: center;
           justify-content: center;
-          color: ${COLORS.mutedText};
+          gap: 8px;
         }
         
         .placeholder-icon {
-          font-size: 36px;
-          margin-bottom: 10px;
-          opacity: 0.4;
+          font-size: 28px;
+          opacity: 0.5;
         }
         
         .placeholder-text {
-          font-size: 12px;
-          font-style: italic;
+          font-size: 11px;
+          color: ${COLORS.mutedText};
         }
         
         .checkpoint-details {
-          padding: 20px;
+          padding: 14px 16px;
         }
         
-        /* Photo labels - "Photo 1", "Photo 2", etc. */
         .checkpoint-label {
-          font-family: 'Crimson Pro', Georgia, serif;
-          font-size: 16px;
+          font-size: 14px;
           font-weight: 600;
           color: ${COLORS.navy};
-          margin-bottom: 12px;
+          margin-bottom: 6px;
         }
         
-        /* Flat text-based condition status - NOT a button */
         .condition-status {
           display: flex;
           align-items: center;
-          gap: 8px;
-          margin-bottom: 12px;
-          font-size: 13px;
-          font-weight: 600;
+          gap: 6px;
+          font-size: 12px;
+          font-weight: 500;
+          margin-bottom: 8px;
         }
         
         .condition-icon {
           font-size: 14px;
         }
         
-        .condition-text {
-          font-style: normal;
-        }
-        
         .checkpoint-notes {
-          font-size: 12px;
-          color: ${COLORS.charcoal};
-          line-height: 1.7;
+          margin-top: 8px;
+          padding-top: 8px;
+          border-top: 1px solid ${COLORS.lightGray};
         }
         
         .checkpoint-notes p {
-          margin: 0;
+          font-size: 11px;
+          color: ${COLORS.charcoal};
+          line-height: 1.6;
         }
         
         /* Watermark styles */
         ${getWatermarkStyles()}
         
-        /* ==================== SIGNATURE SECTION ==================== */
+        /* Signature Section */
         .signature-section {
-          page-break-before: always;
-          padding-top: 60px;
+          margin-top: 50px;
+          page-break-inside: avoid;
         }
         
         .signature-section-header {
           text-align: center;
-          margin-bottom: 50px;
+          margin-bottom: 30px;
         }
         
         .signature-section-header h2 {
-          font-size: 32px;
-          font-weight: 700;
+          font-size: 24px;
+          font-weight: 600;
           color: ${COLORS.burgundy};
           margin-bottom: 10px;
         }
         
-        .signature-section-header p {
-          font-size: 14px;
-          color: ${COLORS.mutedText};
+        .signature-gold-divider {
+          height: 2px;
+          background: ${COLORS.gold};
+          width: 150px;
+          margin: 0 auto 12px auto;
+          border-radius: 1px;
         }
         
-        .signature-gold-divider {
-          height: 4px;
-          background: ${COLORS.gold};
-          width: 120px;
-          margin: 24px auto;
-          border-radius: 2px;
+        .signature-section-header p {
+          font-size: 12px;
+          color: ${COLORS.mutedText};
         }
         
         .signatures-grid {
           display: grid;
           grid-template-columns: repeat(2, 1fr);
-          gap: 50px;
-          margin-bottom: 50px;
+          gap: 30px;
         }
         
         .signature-box {
           background: ${COLORS.cream};
           border-radius: 12px;
-          padding: 32px;
+          padding: 24px;
           border: 1px solid ${COLORS.lightGray};
         }
         
         .signature-box-header {
           display: flex;
           align-items: center;
-          gap: 12px;
-          margin-bottom: 24px;
-          padding-bottom: 16px;
-          border-bottom: 2px solid ${COLORS.gold};
+          gap: 10px;
+          margin-bottom: 16px;
         }
         
         .signature-role-icon {
-          width: 44px;
-          height: 44px;
-          background: ${COLORS.burgundy};
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: ${COLORS.white};
           font-size: 20px;
         }
         
         .signature-role {
-          font-family: 'Crimson Pro', Georgia, serif;
-          font-size: 20px;
-          font-weight: 700;
+          font-size: 14px;
+          font-weight: 600;
           color: ${COLORS.navy};
         }
         
         .signature-image-container {
-          height: 100px;
           background: ${COLORS.white};
+          border: 1px solid ${COLORS.lightGray};
           border-radius: 8px;
-          margin-bottom: 20px;
+          height: 100px;
           display: flex;
           align-items: center;
           justify-content: center;
-          border: 1px solid ${COLORS.lightGray};
+          margin-bottom: 12px;
         }
         
         .signature-image {
-          max-width: 100%;
-          max-height: 90px;
+          max-width: 90%;
+          max-height: 80px;
           object-fit: contain;
         }
         
         .signature-placeholder {
           color: ${COLORS.mutedText};
           font-style: italic;
-          font-size: 13px;
+          font-size: 12px;
         }
         
         .signature-name {
-          font-size: 15px;
+          font-size: 14px;
           color: ${COLORS.navy};
           font-weight: 600;
-          margin-bottom: 8px;
+          margin-bottom: 6px;
         }
         
         .signature-date {
-          font-size: 12px;
+          font-size: 11px;
           color: ${COLORS.mutedText};
         }
         
@@ -719,97 +686,60 @@ async function generatePDFHTML(property: Property, inspection: Inspection, brand
         .disclaimer {
           background: ${COLORS.white};
           border: 2px solid ${COLORS.burgundy};
-          border-radius: 12px;
-          padding: 32px;
-          margin-top: 50px;
+          border-radius: 10px;
+          padding: 24px 28px;
+          margin-top: 40px;
         }
         
         .disclaimer-header {
           display: flex;
           align-items: center;
-          gap: 14px;
-          margin-bottom: 18px;
+          gap: 12px;
+          margin-bottom: 14px;
         }
         
         .disclaimer-icon {
-          width: 40px;
-          height: 40px;
+          width: 36px;
+          height: 36px;
           background: ${COLORS.burgundy};
           border-radius: 50%;
           display: flex;
           align-items: center;
           justify-content: center;
           color: ${COLORS.white};
-          font-size: 20px;
+          font-size: 18px;
         }
         
         .disclaimer h4 {
-          font-size: 18px;
+          font-size: 16px;
           font-weight: 700;
           color: ${COLORS.burgundy};
         }
         
         .disclaimer p {
-          font-size: 12px;
+          font-size: 11px;
           color: ${COLORS.charcoal};
-          line-height: 1.9;
+          line-height: 1.8;
         }
         
-        /* Footer */
+        /* Footer - Minimal */
         .report-footer {
-          margin-top: 70px;
-          padding-top: 28px;
-          border-top: 3px solid ${COLORS.gold};
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
+          margin-top: 50px;
+          padding-top: 20px;
+          border-top: 1px solid ${COLORS.lightGray};
+          text-align: center;
         }
         
-        .report-footer-left {
-          display: flex;
-          align-items: center;
-          gap: 14px;
-        }
-        
-        .footer-logo {
-          width: 36px;
-          height: 36px;
-          background: ${COLORS.burgundy};
-          border-radius: 8px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-family: 'Crimson Pro', Georgia, serif;
-          font-size: 16px;
-          color: ${COLORS.white};
-          font-weight: 700;
-        }
-        
-        .footer-brand {
-          font-size: 14px;
-          color: ${COLORS.burgundy};
-          font-weight: 600;
-        }
-        
-        .footer-tagline {
-          font-size: 11px;
-          color: ${COLORS.mutedText};
-          font-style: italic;
-        }
-        
-        .report-footer-right {
-          text-align: right;
-        }
-        
-        .report-footer-right p {
-          font-size: 11px;
-          color: ${COLORS.mutedText};
-          margin-bottom: 3px;
-        }
-        
-        .report-footer-right .report-id {
-          font-family: monospace;
+        .footer-text {
           font-size: 10px;
+          color: ${COLORS.mutedText};
+        }
+        
+        .footer-report-id {
+          font-family: monospace;
+          font-size: 9px;
+          color: ${COLORS.mutedText};
+          margin-top: 4px;
         }
       </style>
     </head>
@@ -818,75 +748,70 @@ async function generatePDFHTML(property: Property, inspection: Inspection, brand
       <div class="cover-page">
         <div class="cover-header-bar"></div>
         
-        <div class="cover-content">
-          <!-- Logo Section -->
-          <div class="cover-logo-section">
-            ${branding?.companyLogo 
-              ? `<img src="${await getBase64Image(branding.companyLogo)}" class="cover-logo-image" alt="Company Logo" style="width: 80px; height: 80px; border-radius: 16px; object-fit: contain; background: white;" />`
-              : `<div class="cover-logo">PS</div>`
-            }
-            <div class="cover-brand">
-              <div class="cover-brand-name">${branding?.companyName || 'PropertySnap'}</div>
-              <div class="cover-brand-tagline">${branding?.companyName ? 'Property Inspection Services' : 'Protect your bond, every time'}</div>
+        <!-- Logo Section -->
+        <div class="cover-logo-section">
+          ${customLogoBase64 
+            ? `<img src="${customLogoBase64}" class="cover-logo-image" alt="Company Logo" />`
+            : `<div class="cover-logo">PS</div>`
+          }
+          <div class="cover-brand-name">${displayCompanyName}</div>
+        </div>
+        
+        <!-- Gold Divider -->
+        <div class="cover-gold-divider"></div>
+        
+        <!-- Document Title -->
+        <div class="cover-document-title">
+          <h1>Property Inspection Report</h1>
+          <div class="cover-document-subtitle">Official Documentation</div>
+        </div>
+        
+        <!-- Property Photo - ONLY if profile photo exists -->
+        ${profilePhotoBase64 ? `
+        <div class="cover-photo-section">
+          <div class="cover-photo-frame">
+            <div class="cover-photo-border"></div>
+            <img src="${profilePhotoBase64}" class="cover-photo" alt="Property" />
+          </div>
+        </div>
+        ` : ''}
+        
+        <!-- Property Details Card -->
+        <div class="cover-property-card">
+          <div class="cover-property-address">${property.address}</div>
+          <div class="cover-property-meta">
+            <div class="cover-meta-item">
+              <span class="cover-meta-label">Property Type</span>
+              <span class="cover-meta-value">${property.propertyType.charAt(0).toUpperCase() + property.propertyType.slice(1)}</span>
+            </div>
+            <div class="cover-meta-item">
+              <span class="cover-meta-label">Bedrooms</span>
+              <span class="cover-meta-value">${property.bedrooms}</span>
+            </div>
+            <div class="cover-meta-item">
+              <span class="cover-meta-label">Bathrooms</span>
+              <span class="cover-meta-value">${property.bathrooms}</span>
+            </div>
+            <div class="cover-meta-item">
+              <span class="cover-meta-label">Inspection Date</span>
+              <span class="cover-meta-value">${formatDate(inspection.createdAt)}</span>
+            </div>
+            <div class="cover-meta-item">
+              <span class="cover-meta-label">Inspection Type</span>
+              <span class="cover-meta-value">${inspection.type === "move-in" ? "Move-In" : "Move-Out"}</span>
             </div>
           </div>
-          
-          <!-- Gold Divider -->
-          <div class="cover-gold-divider"></div>
-          
-          <!-- Document Title -->
-          <div class="cover-document-title">
-            <h1>Property Inspection Report</h1>
-            <div class="cover-document-subtitle">Official Documentation</div>
-          </div>
-          
-          <!-- Property Photo - ONLY if profile photo exists -->
-          ${profilePhotoBase64 ? `
-          <div class="cover-photo-section">
-            <div class="cover-photo-frame">
-              <div class="cover-photo-border"></div>
-              <img src="${profilePhotoBase64}" class="cover-photo" alt="Property" />
-            </div>
-          </div>
-          ` : ''}
-          
-          <!-- Property Details Card -->
-          <div class="cover-property-card">
-            <div class="cover-property-address">${property.address}</div>
-            <div class="cover-property-meta">
-              <div class="cover-meta-item">
-                <span class="cover-meta-label">Property Type</span>
-                <span class="cover-meta-value">${property.propertyType.charAt(0).toUpperCase() + property.propertyType.slice(1)}</span>
-              </div>
-              <div class="cover-meta-item">
-                <span class="cover-meta-label">Bedrooms</span>
-                <span class="cover-meta-value">${property.bedrooms}</span>
-              </div>
-              <div class="cover-meta-item">
-                <span class="cover-meta-label">Bathrooms</span>
-                <span class="cover-meta-value">${property.bathrooms}</span>
-              </div>
-              <div class="cover-meta-item">
-                <span class="cover-meta-label">Inspection Date</span>
-                <span class="cover-meta-value">${formatDate(inspection.createdAt)}</span>
-              </div>
-              <div class="cover-meta-item">
-                <span class="cover-meta-label">Inspection Type</span>
-                <span class="cover-meta-value">${inspection.type === "move-in" ? "Move-In" : "Move-Out"}</span>
-              </div>
-            </div>
-          </div>
-          
-          <!-- Legal Notice -->
-          <div class="cover-legal-notice">
-            <h4>Official Documentation</h4>
-            <p>
-              This property inspection report constitutes an official record of the condition of the premises 
-              at the time of inspection. All photographs include verified timestamps extracted from image metadata 
-              where available. This document may be used as evidence in tenancy disputes, bond claims, and 
-              tribunal proceedings.
-            </p>
-          </div>
+        </div>
+        
+        <!-- Legal Notice -->
+        <div class="cover-legal-notice">
+          <h4>Official Documentation</h4>
+          <p>
+            This property inspection report constitutes an official record of the condition of the premises 
+            at the time of inspection. All photographs include verified timestamps extracted from image metadata 
+            where available. This document may be used as evidence in tenancy disputes, bond claims, and 
+            tribunal proceedings.
+          </p>
         </div>
       </div>
       
@@ -965,22 +890,10 @@ async function generatePDFHTML(property: Property, inspection: Inspection, brand
           </div>
         </div>
         
-        <!-- Footer -->
+        <!-- Footer - Minimal -->
         <div class="report-footer">
-          <div class="report-footer-left">
-            ${branding?.companyLogo 
-              ? `<img src="${await getBase64Image(branding.companyLogo)}" style="width: 36px; height: 36px; border-radius: 8px; object-fit: contain; background: white;" alt="Logo" />`
-              : `<div class="footer-logo">PS</div>`
-            }
-            <div>
-              <div class="footer-brand">${branding?.companyName || 'PropertySnap'}</div>
-              <div class="footer-tagline">${branding?.companyName ? 'Property Inspection Services' : 'Protect your bond, every time'}</div>
-            </div>
-          </div>
-          <div class="report-footer-right">
-            <p>Generated: ${formatDate(new Date().toISOString())}</p>
-            <p class="report-id">Report ID: ${inspection.id}</p>
-          </div>
+          <div class="footer-text">Captured using PropertySnap</div>
+          <div class="footer-report-id">Report ID: ${inspection.id} • Generated: ${formatDate(new Date().toISOString())}</div>
         </div>
       </div>
     </body>
@@ -1001,17 +914,18 @@ export async function generateInspectionPDF(
       html,
       base64: false,
     });
-
+    
     const canShare = await Sharing.isAvailableAsync();
     if (canShare) {
       await Sharing.shareAsync(uri, {
         mimeType: "application/pdf",
-        dialogTitle: "Property Inspection Report",
+        dialogTitle: "Share Inspection Report",
         UTI: "com.adobe.pdf",
       });
+      return { success: true };
+    } else {
+      return { success: false, error: "Sharing is not available on this device" };
     }
-
-    return { success: true };
   } catch (error) {
     console.error("Error generating PDF:", error);
     return { 
@@ -1029,7 +943,11 @@ export async function printInspectionPDF(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const html = await generatePDFHTML(property, inspection, branding);
-    await Print.printAsync({ html });
+    
+    const result = await Print.printAsync({
+      html,
+    });
+    
     return { success: true };
   } catch (error) {
     console.error("Error printing PDF:", error);

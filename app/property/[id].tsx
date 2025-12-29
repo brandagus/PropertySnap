@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { View, Text, Pressable, StyleSheet, ScrollView, Image, Alert } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { ScreenContainer } from "@/components/screen-container";
@@ -7,6 +7,7 @@ import { useColors } from "@/hooks/use-colors";
 import { useApp, generateId, createDefaultCheckpoints, getDefaultRooms } from "@/lib/app-context";
 import * as Haptics from "expo-haptics";
 import { Platform } from "react-native";
+import * as ImagePicker from "expo-image-picker";
 
 export default function PropertyDetailScreen() {
   const router = useRouter();
@@ -79,6 +80,75 @@ export default function PropertyDetailScreen() {
     );
   };
 
+  const handleChangePhoto = async () => {
+    if (Platform.OS !== "web") {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert("Permission Required", "Please allow access to your photo library to change the property photo.");
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [16, 9],
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      dispatch({
+        type: "UPDATE_PROPERTY",
+        payload: {
+          ...property,
+          photo: result.assets[0].uri,
+        },
+      });
+    }
+  };
+
+  const handleTakePhoto = async () => {
+    if (Platform.OS !== "web") {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert("Permission Required", "Please allow access to your camera to take a property photo.");
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      allowsEditing: true,
+      aspect: [16, 9],
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      dispatch({
+        type: "UPDATE_PROPERTY",
+        payload: {
+          ...property,
+          photo: result.assets[0].uri,
+        },
+      });
+    }
+  };
+
+  const handlePhotoOptions = () => {
+    Alert.alert(
+      "Change Property Photo",
+      "Choose how to update the property photo",
+      [
+        { text: "Take Photo", onPress: handleTakePhoto },
+        { text: "Choose from Library", onPress: handleChangePhoto },
+        { text: "Cancel", style: "cancel" },
+      ]
+    );
+  };
+
   return (
     <ScreenContainer edges={["top", "bottom", "left", "right"]}>
       <ScrollView showsVerticalScrollIndicator={false}>
@@ -105,16 +175,25 @@ export default function PropertyDetailScreen() {
         </View>
 
         {/* Property Image */}
-        {property.photo ? (
-          <Image source={{ uri: property.photo }} style={styles.propertyImage} />
-        ) : (
-          <View 
-            style={[styles.propertyImage, styles.placeholderImage]}
-            className="items-center justify-center"
-          >
-            <IconSymbol name="building.2.fill" size={64} color={colors.muted} />
-          </View>
-        )}
+        <Pressable onPress={handlePhotoOptions}>
+          {property.photo ? (
+            <View style={styles.imageContainer}>
+              <Image source={{ uri: property.photo }} style={styles.propertyImage} />
+              <View style={[styles.editPhotoOverlay, { backgroundColor: 'rgba(0,0,0,0.4)' }]}>
+                <IconSymbol name="camera.fill" size={24} color="#FFFFFF" />
+                <Text style={styles.editPhotoText}>Tap to change photo</Text>
+              </View>
+            </View>
+          ) : (
+            <View 
+              style={[styles.propertyImage, styles.placeholderImage]}
+              className="items-center justify-center"
+            >
+              <IconSymbol name="camera.fill" size={48} color={colors.muted} />
+              <Text style={{ color: colors.muted, marginTop: 8, fontSize: 14 }}>Tap to add property photo</Text>
+            </View>
+          )}
+        </Pressable>
 
         {/* Property Info */}
         <View className="px-6 py-4">
@@ -275,12 +354,31 @@ const styles = StyleSheet.create({
     height: 40,
     justifyContent: "center",
   },
+  imageContainer: {
+    position: "relative",
+  },
   propertyImage: {
     width: "100%",
     height: 200,
   },
   placeholderImage: {
     backgroundColor: "#F1F5F9",
+  },
+  editPhotoOverlay: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 50,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
+  editPhotoText: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "500",
   },
   inviteButton: {
     paddingHorizontal: 16,

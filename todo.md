@@ -206,3 +206,15 @@
 - [x] Update PDF service to use custom logo when available
 - [x] Fall back to default PS logo when no custom logo set
 - [x] Display company name in PDF header when set
+
+## Property Photo Editing
+- [x] Add edit/change property photo button in property details screen
+- [x] Allow user to update the property profile photo after creation
+
+## PDF Fixes Round 2
+- [x] Remove blank second page from PDF
+- [x] Fix margins throughout PDF (wider margins)
+- [x] Remove slogan "Protect your bond, every time" from header
+- [x] Change footer to minimal "Captured using PropertySnap"
+- [x] Allow custom company name text (not just logo) in agency settings
+- [x] Use custom company name in PDF header when set
