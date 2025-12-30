@@ -66,6 +66,7 @@ export default function VerifiedCameraScreen() {
   const [locationPermission, setLocationPermission] = useState<boolean | null>(null);
   const [facing, setFacing] = useState<CameraType>("back");
   const [isCapturing, setIsCapturing] = useState(false);
+  const [zoom, setZoom] = useState<number>(0); // 0 = 1x, negative for wide angle
   const [currentLocation, setCurrentLocation] = useState<Location.LocationObject | null>(null);
   const [locationVerified, setLocationVerified] = useState<boolean | null>(null);
   const [showGuide, setShowGuide] = useState(true);
@@ -308,6 +309,7 @@ export default function VerifiedCameraScreen() {
         ref={cameraRef}
         style={styles.camera}
         facing={facing}
+        zoom={zoom}
       >
         {/* Top Bar */}
         <View style={styles.topBar}>
@@ -442,6 +444,28 @@ export default function VerifiedCameraScreen() {
               </Pressable>
             ))}
           </ScrollView>
+        </View>
+
+        {/* Zoom Controls */}
+        <View style={styles.zoomControls}>
+          <Pressable
+            onPress={() => setZoom(-0.5)}
+            style={[styles.zoomButton, zoom === -0.5 && styles.zoomButtonActive]}
+          >
+            <Text style={[styles.zoomText, zoom === -0.5 && styles.zoomTextActive]}>0.5×</Text>
+          </Pressable>
+          <Pressable
+            onPress={() => setZoom(0)}
+            style={[styles.zoomButton, zoom === 0 && styles.zoomButtonActive]}
+          >
+            <Text style={[styles.zoomText, zoom === 0 && styles.zoomTextActive]}>1×</Text>
+          </Pressable>
+          <Pressable
+            onPress={() => setZoom(0.5)}
+            style={[styles.zoomButton, zoom === 0.5 && styles.zoomButtonActive]}
+          >
+            <Text style={[styles.zoomText, zoom === 0.5 && styles.zoomTextActive]}>2×</Text>
+          </Pressable>
         </View>
 
         {/* Bottom Controls */}
@@ -839,5 +863,32 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "600",
     marginLeft: 6,
+  },
+  zoomControls: {
+    position: "absolute",
+    bottom: 140,
+    alignSelf: "center",
+    flexDirection: "row",
+    backgroundColor: "rgba(0,0,0,0.6)",
+    borderRadius: 24,
+    padding: 4,
+  },
+  zoomButton: {
+    width: 44,
+    height: 32,
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  zoomButtonActive: {
+    backgroundColor: "rgba(197,152,73,0.9)",
+  },
+  zoomText: {
+    color: "rgba(255,255,255,0.7)",
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  zoomTextActive: {
+    color: "#FFFFFF",
   },
 });

@@ -1,0 +1,52 @@
+PDF Report Review - PropertySnap Inspection Report
+================================================
+
+Property: 23 Dunphy Cr
+Type: House, 3 Bedrooms, 2 Bathrooms
+Inspection Date: 30 December 2025
+Inspection Type: Move-Out
+
+ISSUES FOUND:
+-------------
+
+1. PHOTOS NOT LOADING IN PDF (CRITICAL)
+   - Pages 3-8 show "No photo provided" placeholder for all rooms:
+     * Living Room (Not Inspected) - Photo 1 missing
+     * Kitchen (Not Inspected) - Photo 1 missing
+     * Bathroom (Not Inspected) - Photo 1 missing
+     * Bedroom 1 (Not Inspected) - Photo 1 missing
+     * Bedroom 2 (Not Inspected) - Photo 1 missing
+     * Laundry (Not Inspected) - Photo 1 missing
+   
+2. ONE PHOTO WORKING (Page 9)
+   - Outdoor Areas section shows a real photo
+   - Photo has "23 Dunphy Cr" watermark at top
+   - Shows verified timestamp: "30 Dec 2025 at 3:12 pm - VERIFIED"
+   - Shows "Verified Capture" badge in orange/yellow
+   - Photo appears to be of an interior door (not outdoor area)
+
+3. PHOTO CATEGORIZATION ERROR
+   - The working photo is labeled "Outdoor Areas" but shows an interior door
+   - Suggests room assignment may be incorrect
+
+4. SIGNATURE PAGE (Page 10)
+   - Landlord/Agent signature present (blue ink signature)
+   - Tenant signature shows "Awaiting signature"
+   - Legal disclaimer present
+   - Report ID: mjrq7r5ibipq9a34kjo
+   - Footer: "Captured using PropertySnap"
+
+POSITIVE OBSERVATIONS:
+----------------------
+- Cover page looks professional with PropertySnap branding
+- Property photo on cover page loaded correctly
+- Verified timestamp format is clear and professional
+- Signature section layout is clean
+- Legal disclaimer is comprehensive
+
+ROOT CAUSE HYPOTHESIS:
+----------------------
+The photos are stored as local file:// URIs (device paths) which cannot be 
+embedded in the PDF. Only the property cover photo and the one "Outdoor Areas" 
+photo seem to have valid URLs. The PDF generator needs cloud URLs (https://) 
+to embed photos properly.
