@@ -353,3 +353,7 @@
 - [x] Protect API routes with authentication
 - [x] Store auth token securely on device
 - [x] Add logout functionality
+
+
+## Bugs
+- [x] Photo capture takes forever (1+ minute) - cloud upload blocking UI (fixed: upload now runs in background)

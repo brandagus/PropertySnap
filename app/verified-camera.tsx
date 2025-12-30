@@ -139,14 +139,21 @@ export default function VerifiedCameraScreen() {
       // Get current timestamp
       const captureTimestamp = new Date().toISOString();
       
-      // Upload photo to cloud storage
-      const uploadResult = await uploadPhotoWithFallback(photo.uri);
-      const finalPhotoUri = uploadResult.uri;
-      const isCloudPhoto = uploadResult.isCloud;
+      // Save photo locally FIRST for instant response
+      // Cloud upload happens in background - don't block the UI
+      const finalPhotoUri = photo.uri;
       
-      if (!isCloudPhoto) {
-        console.log("Photo saved locally (cloud upload failed):", uploadResult.error);
-      }
+      // Start background upload (fire and forget - don't await)
+      uploadPhotoWithFallback(photo.uri).then((uploadResult) => {
+        if (uploadResult.isCloud) {
+          console.log("Photo uploaded to cloud:", uploadResult.uri);
+          // TODO: Update checkpoint with cloud URL in background
+        } else {
+          console.log("Photo saved locally (cloud upload failed):", uploadResult.error);
+        }
+      }).catch((err) => {
+        console.error("Background upload error:", err);
+      });
       
       // Create verified photo data
       const verifiedPhotoData = {
