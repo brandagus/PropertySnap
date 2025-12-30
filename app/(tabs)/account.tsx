@@ -3,6 +3,7 @@ import { useRouter } from "expo-router";
 import { ScreenContainer } from "@/components/screen-container";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useApp, canManageTeam } from "@/lib/app-context";
+import { useAuth } from "@/hooks/use-auth";
 import { fonts, design } from "@/constants/typography";
 import * as Haptics from "expo-haptics";
 import { Platform } from "react-native";
@@ -19,11 +20,12 @@ interface MenuItem {
 export default function AccountScreen() {
   const router = useRouter();
   const { state, dispatch } = useApp();
+  const { user: authUser, isAuthenticated, logout: authLogout } = useAuth();
 
   const isAdmin = canManageTeam(state.user?.teamRole);
   const hasTeam = !!state.team;
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     if (Platform.OS !== "web") {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
     }
@@ -36,7 +38,11 @@ export default function AccountScreen() {
         { 
           text: "Log Out", 
           style: "destructive",
-          onPress: () => {
+          onPress: async () => {
+            // Logout from OAuth if authenticated
+            if (isAuthenticated) {
+              await authLogout();
+            }
             dispatch({ type: "LOGOUT" });
             router.replace("/onboarding");
           }
@@ -44,6 +50,11 @@ export default function AccountScreen() {
       ]
     );
   };
+
+  // Get display name from OAuth user or local user
+  const displayName = authUser?.name || state.user?.name || state.user?.email || "Guest";
+  const displayEmail = authUser?.email || state.user?.email;
+  const isCloudSynced = isAuthenticated;
 
   const accountMenuItems: MenuItem[] = [
     {
@@ -203,13 +214,19 @@ export default function AccountScreen() {
           <View style={styles.userCard}>
             <View style={styles.avatarContainer}>
               <Text style={styles.avatarText}>
-                {(state.user?.name?.[0]?.toUpperCase()) || (state.user?.email?.charAt(0).toUpperCase()) || "?"}
+                {displayName[0]?.toUpperCase() || "?"}
               </Text>
             </View>
             <View style={styles.userInfo}>
               <Text style={styles.userName}>
-                {state.user?.name || state.user?.email || "Guest"}
+                {displayName}
               </Text>
+              {isCloudSynced && (
+                <View style={styles.syncBadge}>
+                  <IconSymbol name="checkmark.circle.fill" size={12} color="#2D5C3F" />
+                  <Text style={styles.syncBadgeText}>Cloud Synced</Text>
+                </View>
+              )}
               <Text style={styles.userRole}>
                 {state.user?.userType === "landlord" ? "Landlord" : 
                  state.user?.userType === "tenant" ? "Tenant" : 
@@ -407,5 +424,17 @@ const styles = StyleSheet.create({
     fontFamily: fonts.bodySemibold,
     fontSize: 16,
     color: "#991B1B",
+  },
+  syncBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 4,
+    marginBottom: 4,
+  },
+  syncBadgeText: {
+    fontFamily: fonts.bodyMedium,
+    fontSize: 12,
+    color: "#2D5C3F",
+    marginLeft: 4,
   },
 });

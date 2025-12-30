@@ -13,6 +13,18 @@ vi.mock('expo-file-system/legacy', () => ({
   readAsStringAsync: vi.fn().mockResolvedValue('base64encodedphotodata'),
 }));
 
+// Mock the auth module
+vi.mock('@/lib/_core/auth', () => ({
+  getSessionToken: vi.fn().mockResolvedValue(null),
+}));
+
+// Mock react-native Platform
+vi.mock('react-native', () => ({
+  Platform: {
+    OS: 'ios',
+  },
+}));
+
 // Import after mocks are set up
 import { 
   uploadPhotoToCloud, 

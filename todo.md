@@ -344,3 +344,12 @@
 - [x] Update camera capture to upload photos to R2
 - [x] Store R2 URLs instead of local file paths
 - [x] Test photo upload and retrieval
+
+
+## User Authentication Implementation
+- [x] Create login screen with OAuth integration
+- [x] Create signup flow for new users
+- [x] Link photos to authenticated user accounts
+- [x] Protect API routes with authentication
+- [x] Store auth token securely on device
+- [x] Add logout functionality

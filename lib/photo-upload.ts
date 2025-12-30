@@ -5,6 +5,7 @@
 
 import * as FileSystem from 'expo-file-system/legacy';
 import { Platform } from 'react-native';
+import * as Auth from '@/lib/_core/auth';
 
 // Backend API URL - use environment variable or default to Render deployment
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://propertysnap.onrender.com';
@@ -145,10 +146,16 @@ export async function uploadPhotoWithFallback(
   uri: string,
   authToken?: string
 ): Promise<{ uri: string; isCloud: boolean; error?: string }> {
+  // Get auth token if not provided
+  let token = authToken;
+  if (!token && Platform.OS !== 'web') {
+    token = await Auth.getSessionToken() || undefined;
+  }
+  
   // Try to upload to cloud
   const result = await uploadPhotoToCloud({
     uri,
-    authToken,
+    authToken: token,
   });
   
   if (result.success && result.url) {
