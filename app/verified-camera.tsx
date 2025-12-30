@@ -9,7 +9,7 @@ import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useColors } from "@/hooks/use-colors";
 import { useApp, Checkpoint, generateId } from "@/lib/app-context";
 import { calculateDistance } from "@/lib/location-utils";
-import { uploadPhotoWithFallback } from "@/lib/photo-upload";
+import { uploadPhotoWithFallback } from '@/lib/r2-direct-upload';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 const CAMERA_ASPECT_RATIO = 4 / 3;

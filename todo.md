@@ -362,3 +362,5 @@
 
 - [x] Add "require tenant signature" toggle (yes/no) to landlord signature section
 - [x] Hide tenant signature section in PDF when not required
+
+- [x] BUG: Photos not uploading to Cloudflare R2 - configured direct upload with user's R2 credentials
