@@ -323,3 +323,18 @@
 - [x] Default to 7 days from now but allow customization
 - [x] Update notification scheduling to use selected due date
 - [x] Display due date on inspection cards and detail screens
+
+
+## Backend Cloud Integration
+- [x] Set up Neon PostgreSQL database (Sydney region)
+- [x] Configure Cloudflare R2 for photo storage
+- [x] Create GitHub repository and push code
+- [x] Deploy backend to Render
+- [x] Convert database schema from MySQL to PostgreSQL
+- [x] Run database migrations to create tables
+- [x] Create API routes for properties, tenants, inspections, checkpoints
+- [x] Create R2 storage service for photo uploads
+- [ ] Connect mobile app to backend API
+- [ ] Implement user authentication flow
+- [ ] Add offline sync logic
+- [ ] Test end-to-end cloud sync
