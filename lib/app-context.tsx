@@ -88,6 +88,7 @@ export interface Inspection {
   status: InspectionStatus;
   createdAt: string;
   completedAt: string | null;
+  dueDate: string | null; // When the inspection should be completed by
   landlordSignature: string | null;
   landlordName: string | null;
   landlordSignedAt: string | null;

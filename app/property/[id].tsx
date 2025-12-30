@@ -78,6 +78,10 @@ export default function PropertyDetailScreen() {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     }
 
+    // Default due date is 7 days from now
+    const dueDate = new Date();
+    dueDate.setDate(dueDate.getDate() + 7);
+
     const newInspection = {
       id: generateId(),
       propertyId: property.id,
@@ -85,6 +89,7 @@ export default function PropertyDetailScreen() {
       status: "pending" as const,
       createdAt: new Date().toISOString(),
       completedAt: null,
+      dueDate: dueDate.toISOString(),
       landlordSignature: null,
       landlordName: null,
       landlordSignedAt: null,
@@ -95,10 +100,6 @@ export default function PropertyDetailScreen() {
     };
 
     dispatch({ type: "ADD_INSPECTION", payload: { propertyId: property.id, inspection: newInspection } });
-    
-    // Schedule notification reminders for the inspection (7 days from now as default due date)
-    const dueDate = new Date();
-    dueDate.setDate(dueDate.getDate() + 7);
     
     const typeLabel = type === "move-in" ? "Move-In" : type === "move-out" ? "Move-Out" : "Routine";
     
@@ -325,10 +326,15 @@ export default function PropertyDetailScreen() {
                 <IconSymbol name="exclamationmark.triangle.fill" size={20} color={colors.warning} />
                 <Text className="text-sm font-medium text-warning ml-2">INSPECTION IN PROGRESS</Text>
               </View>
-              <Text className="text-base text-foreground mb-3">
+              <Text className="text-base text-foreground mb-1">
                 {activeInspection.type === "move-in" ? "Move-In" : activeInspection.type === "move-out" ? "Move-Out" : "Routine"} inspection started on{" "}
                 {new Date(activeInspection.createdAt).toLocaleDateString()}
               </Text>
+              {activeInspection.dueDate && (
+                <Text className="text-sm text-warning mb-3">
+                  Due by: {new Date(activeInspection.dueDate).toLocaleDateString()}
+                </Text>
+              )}
               <Pressable
                 onPress={() => router.push(`/inspection/${activeInspection.id}`)}
                 style={({ pressed }) => [

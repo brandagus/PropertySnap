@@ -478,11 +478,16 @@ export default function InspectionDetailScreen() {
         </Pressable>
         <View className="flex-1 ml-4">
           <Text className="text-lg font-bold text-foreground" numberOfLines={1}>
-            {inspection.type === "move-in" ? "Move-in" : "Move-out"} Inspection
+            {inspection.type === "move-in" ? "Move-in" : inspection.type === "move-out" ? "Move-out" : "Routine"} Inspection
           </Text>
           <Text className="text-sm text-muted" numberOfLines={1}>
             {property.address}
           </Text>
+          {inspection.dueDate && inspection.status === "pending" && (
+            <Text className="text-xs text-warning mt-1">
+              Due: {new Date(inspection.dueDate).toLocaleDateString()}
+            </Text>
+          )}
         </View>
         
         {/* Export Button */}

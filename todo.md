@@ -315,3 +315,11 @@
 - [x] Include each inspection report in chronological order
 - [x] Add "Export All Inspections" button to property detail screen
 - [x] Show loading state during PDF generation
+
+## Inspection Due Date Picker
+- [x] Add dueDate field to Inspection interface
+- [x] Create date picker modal for selecting due date
+- [x] Update Request Inspection flow to show date picker after type selection
+- [x] Default to 7 days from now but allow customization
+- [x] Update notification scheduling to use selected due date
+- [x] Display due date on inspection cards and detail screens

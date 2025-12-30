@@ -4,7 +4,7 @@ import { useRouter } from "expo-router";
 import { ScreenContainer } from "@/components/screen-container";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useColors } from "@/hooks/use-colors";
-import { useApp, Property, generateId, createDefaultCheckpoints, getDefaultRooms } from "@/lib/app-context";
+import { useApp, Property, generateId, createDefaultCheckpoints, getDefaultRooms, InspectionType } from "@/lib/app-context";
 import * as Haptics from "expo-haptics";
 import { Platform, Linking } from "react-native";
 import {
@@ -12,11 +12,20 @@ import {
   scheduleInspectionReminder,
   scheduleDueDateAlert,
 } from "@/lib/notification-service";
+import { DatePickerModal } from "@/components/date-picker-modal";
 
 export default function ManageTenantsScreen() {
   const router = useRouter();
   const colors = useColors();
   const { state, dispatch } = useApp();
+  
+  // State for date picker
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [pendingInspection, setPendingInspection] = useState<{
+    property: Property;
+    type: InspectionType;
+    tenantName: string;
+  } | null>(null);
   
   // Get properties with tenants assigned
   const propertiesWithTenants = state.properties.filter(
@@ -57,17 +66,27 @@ export default function ManageTenantsScreen() {
     );
   };
 
-  const createInspectionWithType = async (
+  const createInspectionWithType = (
     property: Property,
-    inspectionType: "move-in" | "move-out" | "routine",
+    inspectionType: InspectionType,
     tenantName: string
   ) => {
+    // Store pending inspection details and show date picker
+    setPendingInspection({ property, type: inspectionType, tenantName });
+    setShowDatePicker(true);
+  };
+
+  const handleDateSelected = async (selectedDate: Date) => {
+    if (!pendingInspection) return;
+    
+    const { property, type: inspectionType, tenantName } = pendingInspection;
+    
     // Format type for display
     const typeDisplay = inspectionType === "move-in" ? "Move-In" 
       : inspectionType === "move-out" ? "Move-Out" 
       : "Routine";
 
-    // 1. Create new pending inspection with selected type
+    // 1. Create new pending inspection with selected type and due date
     const newInspection = {
       id: generateId(),
       propertyId: property.id,
@@ -75,6 +94,7 @@ export default function ManageTenantsScreen() {
       status: "pending" as const,
       createdAt: new Date().toISOString(),
       completedAt: null,
+      dueDate: selectedDate.toISOString(),
       landlordSignature: null,
       landlordName: null,
       landlordSignedAt: null,
@@ -86,53 +106,54 @@ export default function ManageTenantsScreen() {
     
     dispatch({ type: "ADD_INSPECTION", payload: { propertyId: property.id, inspection: newInspection } });
     
-    // 2. Schedule notification reminders (7 days from now)
-    const dueDate = new Date();
-    dueDate.setDate(dueDate.getDate() + 7);
-    
+    // 2. Schedule notification reminders using selected due date
     scheduleInspectionReminder(
       newInspection.id,
       property.address,
       typeDisplay,
-      dueDate
+      selectedDate
     );
     
     scheduleDueDateAlert(
       newInspection.id,
       property.address,
       typeDisplay,
-      dueDate
+      selectedDate
     );
     
     // 3. Send push notification to tenant
     await sendTenantActionRequired(
       newInspection.id,
       property.address,
-      `Your landlord has requested a ${typeDisplay} inspection for ${property.address}.`
+      `Your landlord has requested a ${typeDisplay} inspection for ${property.address}. Due by ${selectedDate.toLocaleDateString()}.`
     );
     
     if (Platform.OS !== "web") {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     }
     
+    // Clear pending state
+    setPendingInspection(null);
+    
     // 4. Ask if they want to send SMS
     Alert.alert(
       "Inspection Created",
-      `A ${typeDisplay} inspection has been created and notification sent. Would you also like to send an SMS to ${tenantName}?`,
+      `A ${typeDisplay} inspection has been created with due date ${selectedDate.toLocaleDateString()}. Would you also like to send an SMS to ${tenantName}?`,
       [
         { text: "No, I'm Done", style: "cancel" },
         {
           text: "Send SMS",
-          onPress: () => openSMSAppWithType(property, typeDisplay),
+          onPress: () => openSMSAppWithType(property, typeDisplay, selectedDate),
         },
       ]
     );
   };
   
-  const openSMSAppWithType = (property: Property, inspectionType: string) => {
+  const openSMSAppWithType = (property: Property, inspectionType: string, dueDate?: Date) => {
     const tenantName = property.tenantName || "Tenant";
     const phone = property.tenantPhone || "";
-    const message = `Hey ${tenantName}, your landlord has requested a ${inspectionType} inspection for ${property.address}. Please open the PropertySnap app to get started.`;
+    const dueDateText = dueDate ? ` Please complete by ${dueDate.toLocaleDateString()}.` : "";
+    const message = `Hey ${tenantName}, your landlord has requested a ${inspectionType} inspection for ${property.address}.${dueDateText} Please open the PropertySnap app to get started.`;
     
     if (!phone) {
       Alert.alert("No Phone Number", "This tenant doesn't have a phone number on file.");
@@ -346,6 +367,23 @@ export default function ManageTenantsScreen() {
           }
         />
       )}
+
+      {/* Date Picker Modal */}
+      <DatePickerModal
+        visible={showDatePicker}
+        onClose={() => {
+          setShowDatePicker(false);
+          setPendingInspection(null);
+        }}
+        onSelect={handleDateSelected}
+        initialDate={(() => {
+          const d = new Date();
+          d.setDate(d.getDate() + 7);
+          return d;
+        })()}
+        minimumDate={new Date()}
+        title="Select Due Date"
+      />
     </ScreenContainer>
   );
 }
