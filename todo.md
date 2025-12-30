@@ -364,3 +364,5 @@
 - [x] Hide tenant signature section in PDF when not required
 
 - [x] BUG: Photos not uploading to Cloudflare R2 - configured direct upload with user's R2 credentials
+
+- [ ] BUG: R2 upload fails with SignatureDoesNotMatch error - fix AWS signature calculation
