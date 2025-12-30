@@ -359,3 +359,6 @@
 - [x] Photo capture takes forever (1+ minute) - cloud upload blocking UI (fixed: upload now runs in background)
 
 - [x] Add 0.5x zoom (ultra-wide) support for wider angle photos
+
+- [x] Add "require tenant signature" toggle (yes/no) to landlord signature section
+- [x] Hide tenant signature section in PDF when not required

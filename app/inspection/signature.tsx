@@ -26,6 +26,7 @@ export default function SignatureScreenComponent() {
   const [errors, setErrors] = useState<{ name?: string; signature?: string }>({});
   const [isLoading, setIsLoading] = useState(false);
   const [isComplete, setIsComplete] = useState(false);
+  const [requireTenantSignature, setRequireTenantSignature] = useState(true);
 
   // Find the inspection
   const { inspection, property } = useMemo(() => {
@@ -92,6 +93,9 @@ export default function SignatureScreenComponent() {
         status: "completed" as const,
         completedAt: new Date().toISOString(),
         landlordSignature: signature,
+        landlordName: printName,
+        landlordSignedAt: new Date().toISOString(),
+        requireTenantSignature: requireTenantSignature,
       };
 
       dispatch({ type: "UPDATE_INSPECTION", payload: updatedInspection });
@@ -291,7 +295,7 @@ export default function SignatureScreenComponent() {
           </View>
 
           {/* Date (Read-only) */}
-          <View className="mb-6">
+          <View className="mb-4">
             <Text className="text-sm font-medium text-foreground mb-2">Date</Text>
             <View 
               style={[
@@ -305,6 +309,74 @@ export default function SignatureScreenComponent() {
             >
               <Text style={{ color: colors.foreground }}>{currentDate}</Text>
             </View>
+          </View>
+
+          {/* Tenant Signature Toggle */}
+          <View className="mb-6">
+            <Text className="text-sm font-medium text-foreground mb-3">Require Tenant Signature?</Text>
+            <View className="flex-row gap-3">
+              <Pressable
+                onPress={() => {
+                  setRequireTenantSignature(true);
+                  if (Platform.OS !== "web") {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  }
+                }}
+                style={({ pressed }) => [
+                  styles.toggleButton,
+                  { 
+                    backgroundColor: requireTenantSignature ? colors.primary : colors.surface,
+                    borderColor: requireTenantSignature ? colors.primary : colors.border,
+                  },
+                  pressed && { opacity: 0.8 },
+                ]}
+              >
+                <IconSymbol 
+                  name="checkmark.circle.fill" 
+                  size={18} 
+                  color={requireTenantSignature ? "#FFFFFF" : colors.muted} 
+                />
+                <Text 
+                  className="text-base font-medium ml-2"
+                  style={{ color: requireTenantSignature ? "#FFFFFF" : colors.foreground }}
+                >
+                  Yes
+                </Text>
+              </Pressable>
+              <Pressable
+                onPress={() => {
+                  setRequireTenantSignature(false);
+                  if (Platform.OS !== "web") {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  }
+                }}
+                style={({ pressed }) => [
+                  styles.toggleButton,
+                  { 
+                    backgroundColor: !requireTenantSignature ? colors.primary : colors.surface,
+                    borderColor: !requireTenantSignature ? colors.primary : colors.border,
+                  },
+                  pressed && { opacity: 0.8 },
+                ]}
+              >
+                <IconSymbol 
+                  name="xmark.circle.fill" 
+                  size={18} 
+                  color={!requireTenantSignature ? "#FFFFFF" : colors.muted} 
+                />
+                <Text 
+                  className="text-base font-medium ml-2"
+                  style={{ color: !requireTenantSignature ? "#FFFFFF" : colors.foreground }}
+                >
+                  No
+                </Text>
+              </Pressable>
+            </View>
+            <Text className="text-xs text-muted mt-2">
+              {requireTenantSignature 
+                ? "Tenant will need to sign before the report is finalized."
+                : "Internal inspection only - no tenant signature required."}
+            </Text>
           </View>
 
           {/* Confirmation */}
@@ -392,6 +464,15 @@ const styles = StyleSheet.create({
     height: 48,
     borderRadius: 8,
     borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  toggleButton: {
+    flex: 1,
+    height: 48,
+    borderRadius: 10,
+    borderWidth: 1,
+    flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
   },

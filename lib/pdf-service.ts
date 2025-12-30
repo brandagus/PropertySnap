@@ -674,6 +674,16 @@ async function generatePDFHTML(property: Property, inspection: Inspection, brand
           gap: 30px;
         }
         
+        .signatures-grid.single-signature {
+          grid-template-columns: 1fr;
+          max-width: 500px;
+          margin: 0 auto;
+        }
+        
+        .signature-box.full-width {
+          max-width: 100%;
+        }
+        
         .signature-box {
           background: ${COLORS.cream};
           border-radius: 12px;
@@ -888,12 +898,12 @@ async function generatePDFHTML(property: Property, inspection: Inspection, brand
           <div class="signature-section-header">
             <h2>Signatures & Verification</h2>
             <div class="signature-gold-divider"></div>
-            <p>Both parties acknowledge the accuracy of this inspection report</p>
+            <p>${inspection.requireTenantSignature !== false ? 'Both parties acknowledge the accuracy of this inspection report' : 'Landlord acknowledges the accuracy of this inspection report'}</p>
           </div>
           
-          <div class="signatures-grid">
+          <div class="signatures-grid${inspection.requireTenantSignature === false ? ' single-signature' : ''}">
             <!-- Landlord Signature -->
-            <div class="signature-box">
+            <div class="signature-box${inspection.requireTenantSignature === false ? ' full-width' : ''}">
               <div class="signature-box-header">
                 <div class="signature-role-icon">🏠</div>
                 <div class="signature-role">Landlord / Agent</div>
@@ -908,6 +918,7 @@ async function generatePDFHTML(property: Property, inspection: Inspection, brand
               ${inspection.landlordSignedAt ? `<div class="signature-date">Signed: ${formatDate(inspection.landlordSignedAt)} at ${formatTime(inspection.landlordSignedAt)}</div>` : ''}
             </div>
             
+            ${inspection.requireTenantSignature !== false ? `
             <!-- Tenant Signature -->
             <div class="signature-box">
               <div class="signature-box-header">
@@ -923,6 +934,7 @@ async function generatePDFHTML(property: Property, inspection: Inspection, brand
               ${inspection.tenantName ? `<div class="signature-name">${inspection.tenantName}</div>` : ''}
               ${inspection.tenantSignedAt ? `<div class="signature-date">Signed: ${formatDate(inspection.tenantSignedAt)} at ${formatTime(inspection.tenantSignedAt)}</div>` : ''}
             </div>
+            ` : ''}
           </div>
           
           <!-- Disclaimer -->

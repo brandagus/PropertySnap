@@ -95,6 +95,7 @@ export interface Inspection {
   tenantSignature: string | null;
   tenantName: string | null;
   tenantSignedAt: string | null;
+  requireTenantSignature?: boolean; // Whether tenant signature is required (default true)
   checkpoints: Checkpoint[];
   // Track who performed the inspection
   inspectorId?: string;
