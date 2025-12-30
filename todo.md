@@ -338,3 +338,9 @@
 - [ ] Implement user authentication flow
 - [ ] Add offline sync logic
 - [ ] Test end-to-end cloud sync
+
+## Photo Cloud Upload Integration
+- [x] Create photo upload service to call backend API
+- [x] Update camera capture to upload photos to R2
+- [x] Store R2 URLs instead of local file paths
+- [x] Test photo upload and retrieval

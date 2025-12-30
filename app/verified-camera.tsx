@@ -9,6 +9,7 @@ import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useColors } from "@/hooks/use-colors";
 import { useApp, Checkpoint, generateId } from "@/lib/app-context";
 import { calculateDistance } from "@/lib/location-utils";
+import { uploadPhotoWithFallback } from "@/lib/photo-upload";
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 const CAMERA_ASPECT_RATIO = 4 / 3;
@@ -138,6 +139,15 @@ export default function VerifiedCameraScreen() {
       // Get current timestamp
       const captureTimestamp = new Date().toISOString();
       
+      // Upload photo to cloud storage
+      const uploadResult = await uploadPhotoWithFallback(photo.uri);
+      const finalPhotoUri = uploadResult.uri;
+      const isCloudPhoto = uploadResult.isCloud;
+      
+      if (!isCloudPhoto) {
+        console.log("Photo saved locally (cloud upload failed):", uploadResult.error);
+      }
+      
       // Create verified photo data
       const verifiedPhotoData = {
         uri: photo.uri,
@@ -164,7 +174,7 @@ export default function VerifiedCameraScreen() {
         if (checkpoint) {
           const updatedCheckpoint: Checkpoint = {
             ...checkpoint,
-            landlordPhoto: photo.uri,
+            landlordPhoto: finalPhotoUri,
             timestamp: captureTimestamp,
             landlordPhotoTimestamp: {
               captureDate: captureTimestamp,
@@ -185,7 +195,7 @@ export default function VerifiedCameraScreen() {
           id: generateId(),
           roomName: params.roomName,
           title: GUIDE_INFO[selectedGuide].title,
-          landlordPhoto: photo.uri,
+          landlordPhoto: finalPhotoUri,
           tenantPhoto: null,
           moveOutPhoto: null,
           landlordCondition: null,
