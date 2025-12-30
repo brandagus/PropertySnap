@@ -308,3 +308,10 @@
 - [x] Show type selection dialog before creating inspection
 - [x] Pass selected type to inspection creation
 - [x] Update SMS message to include inspection type
+
+## Inspection History PDF Export
+- [x] Create combined PDF export function for all property inspections
+- [x] Include cover page with property details and inspection summary
+- [x] Include each inspection report in chronological order
+- [x] Add "Export All Inspections" button to property detail screen
+- [x] Show loading state during PDF generation

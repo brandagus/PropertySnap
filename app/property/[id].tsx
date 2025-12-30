@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { View, Text, Pressable, StyleSheet, ScrollView, Image, Alert } from "react-native";
+import { useState, useMemo } from "react";
+import { View, Text, Pressable, StyleSheet, ScrollView, Image, Alert, ActivityIndicator } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { ScreenContainer } from "@/components/screen-container";
 import { IconSymbol } from "@/components/ui/icon-symbol";
@@ -12,6 +12,7 @@ import {
   scheduleInspectionReminder,
   scheduleDueDateAlert,
 } from "@/lib/notification-service";
+import { generateInspectionHistoryPDF } from "@/lib/pdf-service";
 
 export default function PropertyDetailScreen() {
   const router = useRouter();
@@ -33,6 +34,44 @@ export default function PropertyDetailScreen() {
 
   const activeInspection = property.inspections.find(i => i.status === "pending");
   const completedInspections = property.inspections.filter(i => i.status === "completed");
+  const [isExporting, setIsExporting] = useState(false);
+
+  const handleExportHistory = async () => {
+    if (property.inspections.length === 0) {
+      Alert.alert("No Inspections", "There are no inspections to export for this property.");
+      return;
+    }
+
+    if (Platform.OS !== "web") {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+
+    setIsExporting(true);
+    
+    try {
+      // Get team branding if available
+      const team = state.team;
+      const branding = team ? {
+        companyLogo: team.companyLogo,
+        companyName: team.companyName || team.name,
+      } : undefined;
+
+      const result = await generateInspectionHistoryPDF(property, property.inspections, branding);
+      
+      if (!result.success) {
+        Alert.alert("Export Failed", result.error || "Failed to generate PDF");
+      } else {
+        if (Platform.OS !== "web") {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        }
+      }
+    } catch (error) {
+      console.error("Export error:", error);
+      Alert.alert("Export Failed", "An unexpected error occurred while generating the PDF.");
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   const handleStartInspection = (type: "move-in" | "move-out" | "routine") => {
     if (Platform.OS !== "web") {
@@ -349,7 +388,28 @@ export default function PropertyDetailScreen() {
         {/* Completed Inspections */}
         {completedInspections.length > 0 && (
           <View className="px-6 mb-8">
-            <Text className="text-sm font-medium text-muted mb-3">COMPLETED INSPECTIONS</Text>
+            <View className="flex-row items-center justify-between mb-3">
+              <Text className="text-sm font-medium text-muted">COMPLETED INSPECTIONS</Text>
+              <Pressable
+                onPress={handleExportHistory}
+                disabled={isExporting}
+                style={({ pressed }) => [
+                  styles.exportButton,
+                  { backgroundColor: `${colors.primary}15`, borderColor: colors.primary },
+                  pressed && { opacity: 0.7 },
+                  isExporting && { opacity: 0.5 },
+                ]}
+              >
+                {isExporting ? (
+                  <ActivityIndicator size="small" color={colors.primary} />
+                ) : (
+                  <>
+                    <IconSymbol name="doc.fill" size={14} color={colors.primary} />
+                    <Text style={[styles.exportButtonText, { color: colors.primary }]}>Export All</Text>
+                  </>
+                )}
+              </Pressable>
+            </View>
             {completedInspections.map((inspection) => (
               <Pressable
                 key={inspection.id}
@@ -451,5 +511,18 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     marginBottom: 12,
+  },
+  exportButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+    borderWidth: 1,
+    gap: 6,
+  },
+  exportButtonText: {
+    fontSize: 13,
+    fontWeight: "600",
   },
 });
